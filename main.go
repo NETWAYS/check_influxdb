@@ -1,8 +1,8 @@
 package main
 
 import (
-	"check_influxdb/cmd"
 	"fmt"
+	"github.com/NETWAYS/check_influxdb/cmd"
 )
 
 // nolint: gochecknoglobals

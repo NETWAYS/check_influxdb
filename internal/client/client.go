@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/NETWAYS/go-check"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"strconv"
+	"time"
 )
 
 const (
@@ -33,8 +33,6 @@ type Client struct {
 	StatusMode   string
 
 	Url      string
-	Username string
-	Password string
 	Token    string
 	Insecure bool
 	Client   influxdb2.Client
@@ -44,13 +42,12 @@ type Client struct {
 	Warning  int
 }
 
-func NewClient(url, username, password, token string) *Client {
+func NewClient(url, token, org string) *Client {
 	return &Client{
-		Url:      url,
-		Username: username,
-		Password: password,
-		Token:    token,
-		Insecure: false,
+		Url:          url,
+		Token:        token,
+		Insecure:     false,
+		Organization: org,
 	}
 }
 
@@ -62,9 +59,25 @@ func (c *Client) Connect() error {
 			InsecureSkipVerify: c.Insecure,
 		}).SetLogLevel(c.LogLevel))
 
-	c.Client = cfg
+	ctx, cancel := c.timeoutContext()
+	defer cancel()
+
+	conn, err := cfg.Ping(ctx)
+	if err != nil {
+		err = fmt.Errorf("could not reach influxdb instance: %w", err)
+		return err
+	}
+
+	if conn {
+		c.Client = cfg
+	}
 
 	return nil
+}
+
+func (c *Client) timeoutContext() (context.Context, func()) {
+	// TODO Add timeout config
+	return context.WithTimeout(context.Background(), 5*time.Second)
 }
 
 func (c *Client) ExecuteQuery(ifClient influxdb2.Client, query string) (rc int, output string) {
@@ -74,9 +87,8 @@ func (c *Client) ExecuteQuery(ifClient influxdb2.Client, query string) (rc int, 
 
 	if c.Token != "" {
 		value, measurement, field = c.parseQueryValueType(ifClient, query)
-		//value, measurement, field = c.parseQueryValueType(ifClient, c.Query)
+		//value, measurement, field = c.parseQueryValueType(ifClient, c.RawQuery)
 		fmt.Println(value)
-		fmt.Println(ByteToHumanread(value, 2))
 
 		defer ifClient.Close()
 	} else {
@@ -86,7 +98,7 @@ func (c *Client) ExecuteQuery(ifClient influxdb2.Client, query string) (rc int, 
 		}
 
 		value, measurement, field = c.parseQueryValueType(ifClient, query)
-		//value, measurement, field = c.parseQueryValueType(ifClient, c.Query)
+		//value, measurement, field = c.parseQueryValueType(ifClient, c.RawQuery)
 
 		// Sign out
 		err = ifClient.UsersAPI().SignOut(context.Background())
@@ -112,24 +124,12 @@ func (c *Client) ExecuteQuery(ifClient influxdb2.Client, query string) (rc int, 
 	return
 }
 
-func (c *Client) ExecQuery(ifClient influxdb2.Client, query string) {
-	//queryApi := ifClient.QueryAPI(c.Organization)
-
-	if c.Token == "" {
-
-	} else {
-
-	}
-
-	return
-}
-
 func (c *Client) parseQueryValueType(ifClient influxdb2.Client, query string) (value int, measurement string, field string) {
 	queryApi := ifClient.QueryAPI(c.Organization)
 
 	fmt.Println(query)
 
-	//result, err := queryApi.Query(context.Background(), c.Query)
+	//result, err := queryApi.RawQuery(context.Background(), c.RawQuery)
 	result, err := queryApi.Query(context.Background(), query)
 	if err == nil {
 		counter := 0
@@ -176,59 +176,4 @@ func (c *Client) parseQueryValueType(ifClient influxdb2.Client, query string) (v
 	}
 
 	return value, measurement, field
-}
-
-// https://mrwaggel.be/post/golang-human-readable-byte-sizes/
-func ByteToHumanread(length int, decimals int) (out string) {
-	var unit string
-	var i int
-	var remainder int
-
-	// Get whole number, and the remainder for decimals
-	if length > TB {
-		unit = "TB"
-		i = length / TB
-		remainder = length - (i * TB)
-	} else if length > GB {
-		unit = "GB"
-		i = length / GB
-		remainder = length - (i * GB)
-	} else if length > MB {
-		unit = "MB"
-		i = length / MB
-		remainder = length - (i * MB)
-	} else if length > KB {
-		unit = "KB"
-		i = length / KB
-		remainder = length - (i * KB)
-	} else {
-		return strconv.Itoa(int(length)) + " B"
-	}
-
-	if decimals == 0 {
-		return strconv.Itoa(int(i)) + " " + unit
-	}
-
-	// This is to calculate missing leading zeroes
-	width := 0
-	if remainder > GB {
-		width = 12
-	} else if remainder > MB {
-		width = 9
-	} else if remainder > KB {
-		width = 6
-	} else {
-		width = 3
-	}
-
-	// Insert missing leading zeroes
-	remainderString := strconv.Itoa(int(remainder))
-	for iter := len(remainderString); iter < width; iter++ {
-		remainderString = "0" + remainderString
-	}
-	if decimals > len(remainderString) {
-		decimals = len(remainderString)
-	}
-
-	return fmt.Sprintf("%d.%s%s", i, remainderString[:decimals], unit)
 }

@@ -1,16 +1,12 @@
 package cmd
 
 import (
-	"check_influxdb/internal/client"
 	"github.com/NETWAYS/go-check"
 	"github.com/spf13/cobra"
 	"os"
 )
 
-var (
-	Timeout = 30
-	Client  = &client.Client{}
-)
+var Timeout = 30
 
 var rootCmd = &cobra.Command{
 	Use:   "check_influxdb",
@@ -44,13 +40,10 @@ func init() {
 	pfs := rootCmd.PersistentFlags()
 	pfs.StringVarP(&cliConfig.Hostname, "hostname", "H", "localhost",
 		"Address of the InfluxDB instance")
-	pfs.IntVarP(&cliConfig.Port, "port", "", 8086,
+	pfs.IntVarP(&cliConfig.Port, "port", "p", 8086,
 		"Port of the InfluxDB instance")
-	pfs.StringVarP(&cliConfig.Username, "username", "U", "",
-		"Username if authentication is required")
-	pfs.StringVarP(&cliConfig.Password, "password", "P", "",
-		"Password if authentication is required")
-	pfs.StringVarP(&cliConfig.Token, "token", "", "", "")
+	pfs.StringVarP(&cliConfig.Token, "token", "T", "",
+		"The token which allows access to the API")
 	pfs.BoolVarP(&cliConfig.TLS, "tls", "S", false,
 		"Use secure connection")
 	pfs.BoolVar(&cliConfig.Insecure, "insecure", false,
