@@ -1,0 +1,15 @@
+stages:
+  - test
+
+go build:
+  image: golang:latest
+  variables:
+    CGO_ENABLED: 0
+  script:
+    - go get ./...
+    - rm -rf build
+    - mkdir build
+    - go build -o build/check_influxdb .
+  artifacts:
+    paths:
+      - build
