@@ -28,7 +28,7 @@ The health status is:
 		var rc int
 		output := health.Name + ": " + string(health.Status) + " - " + *health.Message
 
-		switch health.Status {
+		switch string(health.Status) {
 		case "pass":
 			rc = 0
 		case "fail":

@@ -37,7 +37,8 @@ func (c *Client) GetQueryResult(query string) (res *api.QueryTableResult, err er
 	return
 }
 
-func (c *Client) GetSingleQueryResult(query string) (record *query.FluxRecord, err error) {
+//nolint: errorlint
+func (c *Client) GetQueryRecords(query string) (records []*query.FluxRecord, err error) {
 	res, err := c.GetQueryResult(query)
 	if err != nil {
 		return
@@ -49,15 +50,10 @@ func (c *Client) GetSingleQueryResult(query string) (record *query.FluxRecord, e
 	}
 
 	for res.Next() {
-		if record != nil {
-			err = fmt.Errorf("more than one record has been returned")
-			return
-		}
-
-		record = res.Record()
+		records = append(records, res.Record())
 	}
 
-	if record == nil {
+	if records == nil {
 		err = fmt.Errorf("no record has been returned")
 		return
 	}

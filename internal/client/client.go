@@ -29,6 +29,7 @@ func NewClient(url, token, org string) *Client {
 	}
 }
 
+//nolint: gosec
 func (c *Client) Connect() error {
 	cfg := influxdb2.NewClientWithOptions(
 		c.Url,

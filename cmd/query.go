@@ -5,32 +5,46 @@ import (
 	"github.com/NETWAYS/check_influxdb/internal/client"
 	"github.com/NETWAYS/go-check"
 	"github.com/NETWAYS/go-check/perfdata"
+	"github.com/NETWAYS/go-check/result"
 	"github.com/spf13/cobra"
 	"strings"
 	"time"
 )
 
 type QueryConfig struct {
-	RawQuery    string
-	Bucket      string
-	RangeStart  time.Duration
-	RangeEnd    time.Duration
-	Measurement string
-	Field       string
-	RawFilter   []string
-	Filter      []string
-	Aggregation string
-	Critical    string
-	Warning     string
+	RawQuery      string
+	Bucket        string
+	RangeStart    time.Duration
+	RangeEnd      time.Duration
+	Measurement   string
+	Field         string
+	RawFilter     []string
+	Filter        []string
+	Aggregation   string
+	PerfdataLabel string
+	ValueByKey    string
+	Critical      string
+	Warning       string
+	Verbose       bool
 }
 
 var cliQueryConfig QueryConfig
 
 var queryCmd = &cobra.Command{
 	Use:   "query",
-	Short: "Checks a specific value from the database",
-	Long: `Checks a specific value from the database. The query must return only ONE value.
-`,
+	Short: "Checks one specific or multiple values from the database",
+	Long: `Checks one specific or multiple values from the database. It's possible to set custom labels for
+the perfdata via '--perfdata-label', or set the key name from the database via '--value-by-key'.
+IMPORTANT: the filter, aggregation and raw-filter parameters has a specific evaluation order, which is:
+  1. --bucket
+  2. --start --end
+  3. --measurement
+  4. --field
+  5. --filter (can be repeated)
+  6. --raw-filter (can be repeated)
+  7. --aggregation
+
+Use the '--verbose' parameter to see the query which will be evaluated.`,
 	Example: ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		c := cliConfig.Client()
@@ -46,48 +60,73 @@ var queryCmd = &cobra.Command{
 			if err != nil {
 				check.ExitError(err)
 			}
+			if cliQueryConfig.Verbose {
+				fmt.Println(query)
+			}
 		}
 
-		res, err := c.GetSingleQueryResult(query)
+		res, err := c.GetQueryRecords(query)
 		if err != nil {
 			check.ExitError(err)
 		}
 
-		result, err := client.AssertFloat64(res.Value())
-		if err != nil {
-			check.ExitError(err)
+		var (
+			output  string
+			rc      int
+			perf    perfdata.PerfdataList
+			states  []int
+			summary float64
+		)
+
+		for _, result := range res {
+			record, err := client.AssertFloat64(result.Value())
+			if err != nil {
+				check.ExitError(err)
+			}
+
+			summary += record
+
+			crit, err := check.ParseThreshold(cliQueryConfig.Critical)
+			if err != nil {
+				check.ExitError(err)
+			}
+
+			warn, err := check.ParseThreshold(cliQueryConfig.Warning)
+			if err != nil {
+				check.ExitError(err)
+			}
+
+			if crit.DoesViolate(record) {
+				rc = 2
+			} else if warn.DoesViolate(record) {
+				rc = 1
+			} else {
+				rc = 0
+			}
+
+			output += fmt.Sprintf("value is: %s; ", check.FormatFloat(record))
+
+			states = append(states, rc)
+
+			if cliQueryConfig.ValueByKey != "" {
+				cliQueryConfig.PerfdataLabel = fmt.Sprint(result.ValueByKey(cliQueryConfig.ValueByKey))
+			}
+
+			p := perfdata.Perfdata{
+				Label: cliQueryConfig.PerfdataLabel,
+				Value: record,
+				Warn:  warn,
+				Crit:  crit,
+			}
+
+			perf.Add(&p)
 		}
 
-		var rc int
-
-		crit, err := check.ParseThreshold(cliQueryConfig.Critical)
-		if err != nil {
-			check.ExitError(err)
+		if result.WorstState(states...) == 0 {
+			output = "All values are OK"
 		}
 
-		warn, err := check.ParseThreshold(cliQueryConfig.Warning)
-		if err != nil {
-			check.ExitError(err)
-		}
-
-		if crit.DoesViolate(result) {
-			rc = 2
-		} else if warn.DoesViolate(result) {
-			rc = 1
-		} else {
-			rc = 0
-		}
-
-		output := fmt.Sprintf("value is: %s", check.FormatFloat(result))
-
-		p := perfdata.PerfdataList{
-			{Label: "value", Value: result,
-				Warn: warn,
-				Crit: crit,
-			},
-		}
-
-		check.ExitRaw(rc, output, "|", p.String())
+		check.ExitRaw(result.WorstState(states...), output, "|", perf.String())
 	},
 }
 
@@ -97,10 +136,14 @@ func init() {
 
 	fs.StringVarP(&cliConfig.Organization, "org", "o", "",
 		"The organization which will be used")
+
 	_ = queryCmd.MarkFlagRequired("org")
+
 	fs.StringVarP(&cliQueryConfig.Bucket, "bucket", "b", "",
 		"The bucket where time series data is stored")
+
 	_ = queryCmd.MarkFlagRequired("bucket")
+
 	fs.StringVarP(&cliQueryConfig.RawQuery, "raw-query", "q", "",
 		"An InfluxQL query which will be performed. Note: Only ONE value result will be evaluated")
 	fs.DurationVar(&cliQueryConfig.RangeStart, "start", -time.Hour,
@@ -112,19 +155,24 @@ func init() {
 	fs.StringVarP(&cliQueryConfig.Field, "field", "f", "value",
 		"The key-value pair that records metadata and the actual data value.")
 	fs.StringVarP(&cliQueryConfig.Aggregation, "aggregation", "a", "last",
-		"Function that returns an aggregated value across a set of points.\nViable values are 'mean', 'median', 'last'")
+		"Function that returns an aggregated value across a set of points.\nViable values are 'mean', 'median', 'last', 'max', 'sum'")
 	fs.StringArrayVarP(&cliQueryConfig.Filter, "filter", "F", []string{},
 		"Add a key=value filter to the query, e.g. 'hostname=example.com'")
 	fs.StringArrayVar(&cliQueryConfig.RawFilter, "raw-filter", []string{},
 		"A fully customizable filter which will be added to the query.\ne.g. 'filter(fn: (r) => r[\"hostname\"] == \"example.com\")'")
+	fs.StringVar(&cliQueryConfig.ValueByKey, "value-by-key", "",
+		"Sets the label for the perfdata of the given column key for the record.\ne.g. --value-by-key 'hostname', which will be rendered out"+
+			"of the database to 'exmaple.int.host.com'")
+	fs.StringVar(&cliQueryConfig.PerfdataLabel, "perfdata-label", "",
+		"Sets as custom label for the perfdata")
+	fs.BoolVarP(&cliQueryConfig.Verbose, "verbose", "v", false,
+		"Display verbose output")
 	fs.StringVarP(&cliQueryConfig.Critical, "critical", "c", "500",
 		"The critical threshold for a value")
 	fs.StringVarP(&cliQueryConfig.Warning, "warning", "w", "1000",
 		"The warning threshold for a value")
 
 	fs.SortFlags = false
-
-	// In icinga2 beispiel Hostname, service, metric abfragen
 }
 
 func (q *QueryConfig) BuildQuery() (string, error) {
@@ -140,10 +188,6 @@ func (q *QueryConfig) BuildQuery() (string, error) {
 		q.Field,
 	)
 
-	for _, rawFilter := range q.RawFilter {
-		query += "\n |> " + rawFilter
-	}
-
 	for _, filter := range q.Filter {
 		pair := strings.SplitN(filter, "=", 2)
 		if len(pair) < 2 {
@@ -157,8 +201,12 @@ func (q *QueryConfig) BuildQuery() (string, error) {
 		)
 	}
 
+	for _, rawFilter := range q.RawFilter {
+		query += "\n |> " + rawFilter
+	}
+
 	switch q.Aggregation {
-	case "median", "mean", "last":
+	case "median", "mean", "last", "sum", "max":
 		query += "\n |> " + q.Aggregation + "()"
 	default:
 		return "", fmt.Errorf("unknown aggreation function")

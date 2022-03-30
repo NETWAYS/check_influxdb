@@ -75,6 +75,21 @@ Global Flags:
  CRITICAL - value is: 12623000000 | value=12623000000;1000;500
 ````
 
+````
+ $ check_influxdb query -H 'example.host' --port 443 --tls --token 'example_token' \
+                        --org "example_org" \
+                        --bucket 'example_bucket' \
+                        --start -168h \
+                        --field value \
+                        --measurement "example_measurement" \
+                        --filter 'hostname=exmaple.host.name' \
+                        --raw-filter 'group(columns: ["hostname"], mode: "by") \
+                        --raw-filter 'aggregateWindow(every: 30m, fn: sum)' \
+                        --aggregation last \
+                        --value-by-key hostname
+OK - All values are OK | exmaple.host.name=0.47;1000;500 exmaple.host1.name=1.53;1000;500 exmaple.host2.name=1.43;1000;500 exmaple.host3.name=0.47;1000;500
+````
+
 ## Further Documentation
 
 [Query data with Flux](https://docs.influxdata.com/influxdb/v2.1/query-data/flux/)
