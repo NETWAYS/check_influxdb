@@ -31,7 +31,18 @@ OK - influxdb: pass - ready for queries and writes
 
 ### Query
 
-Checks a specific value from the database. The query must return only ONE value.
+Checks one specific or multiple values from the database. It's possible to set custom labels for
+the perfdata via `--perfdata-label`, or set the key name from the database via `--value-by-key`.
+>IMPORTANT: the filter, aggregation and raw-filter parameters has a specific evaluation order, which is:
+ 1. --bucket
+ 2. --start --end
+ 3. --measurement
+ 4. --field
+ 5. --filter (can be repeated)
+ 6. --raw-filter (can be repeated)
+ 7. --aggregation
+
+Use the `--verbose` parameter to see the query which will be evaluated.
 
 ````
 Usage:
@@ -46,10 +57,14 @@ Flags:
   -m, --measurement string       The data stored in the associated fields, e.g. 'disk'
   -f, --field string             The key-value pair that records metadata and the actual data value. (default "value")
   -a, --aggregation string       Function that returns an aggregated value across a set of points.
-                                 Viable values are 'mean', 'median', 'last' (default "last")
+                                 Viable values are 'mean', 'median', 'last', 'max', 'sum' (default "last")
   -F, --filter stringArray       Add a key=value filter to the query, e.g. 'hostname=example.com'
       --raw-filter stringArray   A fully customizable filter which will be added to the query.
                                  e.g. 'filter(fn: (r) => r["hostname"] == "example.com")'
+      --value-by-key string      Sets the label for the perfdata of the given column key for the record.
+                                 e.g. --value-by-key 'hostname', which will be rendered outof the database to 'exmaple.int.host.com'
+      --perfdata-label string    Sets as custom label for the perfdata
+  -v, --verbose                  Display verbose output
   -c, --critical string          The critical threshold for a value (default "500")
   -w, --warning string           The warning threshold for a value (default "1000")
   -h, --help                     help for query
