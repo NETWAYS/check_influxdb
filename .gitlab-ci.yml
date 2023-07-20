@@ -1,15 +1,29 @@
+image: golang:latest
+
 stages:
+  - lint
   - test
 
-go build:
-  image: golang:latest
-  variables:
-    CGO_ENABLED: 0
+go_vet:
+  stage: lint
   script:
-    - go get ./...
-    - rm -rf build
-    - mkdir build
-    - go build -o build/check_influxdb .
-  artifacts:
-    paths:
-      - build
+    - go vet $(go list ./... | grep -v /vendor/)
+
+go_fmt:
+  stage: lint
+  script:
+    - go fmt $(go list ./... | grep -v /vendor/)
+
+golangci:
+  stage: lint
+  image:
+    name: docker.io/golangci/golangci-lint:v1.51
+    entrypoint: ['']
+  script:
+    - golangci-lint run -v
+
+go_test:
+  stage: test
+  coverage: '/coverage: (\d+\.\d+)/'
+  script:
+    - go test -v -cover ./...
