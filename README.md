@@ -8,7 +8,7 @@ Icinga check plugin to check InfluxDB v2
 
 Checks the health status of an InfluxDB instance
 
-````
+```
 Usage:
   check_influxdb health
 
@@ -22,12 +22,12 @@ Global Flags:
   -t, --timeout int       Timeout for the check (default 30)
   -S, --tls               Use secure connection
   -T, --token string      The token which allows access to the API
-````
+```
 
-````
+```
 $ check_influxdb health
 OK - influxdb: pass - ready for queries and writes
-````
+```
 
 ### Query
 
@@ -44,7 +44,7 @@ the perfdata via `--perfdata-label`, or set the key name from the database via `
 
 Use the `--verbose` parameter to see the query which will be evaluated.
 
-````
+```
 Usage:
   check_influxdb query [flags]
 
@@ -76,9 +76,9 @@ Global Flags:
   -t, --timeout int       Timeout for the check (default 30)
   -S, --tls               Use secure connection
   -T, --token string      The token which allows access to the API
-````
+```
 
-````
+```
  $ check_influxdb query -H 'example.host' --port 443 --token 'example_token' -S \
                         --org "example_org" \
                         --bucket 'example_bucket' \
@@ -88,9 +88,9 @@ Global Flags:
                         --aggregation 'median' \
                         --start -1h --end 0
  CRITICAL - value is: 12623000000 | value=12623000000;1000;500
-````
+```
 
-````
+```
  $ check_influxdb query -H 'example.host' --port 443 --tls --token 'example_token' \
                         --org "example_org" \
                         --bucket 'example_bucket' \
@@ -103,7 +103,7 @@ Global Flags:
                         --aggregation last \
                         --value-by-key hostname
 OK - All values are OK | exmaple.host.name=0.47;1000;500 exmaple.host1.name=1.53;1000;500 exmaple.host2.name=1.43;1000;500 exmaple.host3.name=0.47;1000;500
-````
+```
 
 ## Further Documentation
 
@@ -114,7 +114,7 @@ OK - All values are OK | exmaple.host.name=0.47;1000;500 exmaple.host1.name=1.53
 Copyright (c) 2022 [NETWAYS GmbH](mailto:info@netways.de)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-License as published by the Free Software Foundation, either version 3 of the License, or
+License as published by the Free Software Foundation, either version 2 of the License, or
 (at your option) any later version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
