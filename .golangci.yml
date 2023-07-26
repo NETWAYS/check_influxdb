@@ -1,5 +1,7 @@
 run:
   timeout: 5m
+  skip-files:
+    - '(.+)_test\.go'
 
 linters:
   disable-all: false
@@ -7,7 +9,6 @@ linters:
     - funlen
     - dogsled
     - dupl
-    # - lll
     - whitespace
     - wsl
     - exportloopref
@@ -16,5 +17,4 @@ linters:
   presets:
     - bugs
     - unused
-    # - style
   fast: false
