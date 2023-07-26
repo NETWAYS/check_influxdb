@@ -4,8 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/influxdata/influxdb-client-go/v2/api/query"
+	"github.com/influxdata/influxdb-client-go/v2/domain"
 	"time"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
 type Client struct {
@@ -29,7 +33,7 @@ func NewClient(url, token, org string) *Client {
 	}
 }
 
-//nolint: gosec
+// nolint: gosec
 func (c *Client) Connect() error {
 	cfg := influxdb2.NewClientWithOptions(
 		c.Url,
@@ -57,4 +61,55 @@ func (c *Client) Connect() error {
 func (c *Client) timeoutContext() (context.Context, func()) {
 	// TODO Add timeout config
 	return context.WithTimeout(context.Background(), 5*time.Second)
+}
+
+func (c *Client) Health() (*domain.HealthCheck, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	health, err := c.Client.Health(ctx)
+	if err != nil {
+		err = fmt.Errorf("could not fetch health: %w", err)
+		return nil, err
+	}
+
+	return health, nil
+}
+
+func (c *Client) GetQueryResult(query string) (res *api.QueryTableResult, err error) {
+	queryApi := c.Client.QueryAPI(c.Organization)
+
+	ctx, cancel := c.timeoutContext()
+	defer cancel()
+
+	res, err = queryApi.Query(ctx, query)
+	if err != nil {
+		err = fmt.Errorf("could build query: %w", err)
+		return
+	}
+
+	return
+}
+
+func (c *Client) GetQueryRecords(query string) (records []*query.FluxRecord, err error) {
+	res, err := c.GetQueryResult(query)
+	if err != nil {
+		return
+	}
+
+	if res.Err() != nil {
+		err = fmt.Errorf("could not parse query: %w", res.Err())
+		return
+	}
+
+	for res.Next() {
+		records = append(records, res.Record())
+	}
+
+	if records == nil {
+		err = fmt.Errorf("no record has been returned")
+		return
+	}
+
+	return
 }
