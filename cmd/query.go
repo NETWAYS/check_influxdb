@@ -36,13 +36,13 @@ var queryCmd = &cobra.Command{
 	Long: `Checks one specific or multiple values from the database. It's possible to set custom labels for
 the perfdata via '--perfdata-label', or set the key name from the database via '--value-by-key'.
 IMPORTANT: the filter, aggregation and raw-filter parameters has a specific evaluation order, which is:
-  1. --bucket
-  2. --start --end
-  3. --measurement
-  4. --field
-  5. --filter (can be repeated)
-  6. --raw-filter (can be repeated)
-  7. --aggregation
+	1. --bucket
+	2. --start --end
+	3. --measurement
+	4. --field
+	5. --filter (can be repeated)
+	6. --raw-filter (can be repeated)
+	7. --aggregation
 
 Use the '--verbose' parameter to see the query which will be evaluated.`,
 	Example: ``,
@@ -112,6 +112,7 @@ Use the '--verbose' parameter to see the query which will be evaluated.`,
 				cliQueryConfig.PerfdataLabel = fmt.Sprint(result.ValueByKey(cliQueryConfig.ValueByKey))
 			}
 
+			// TODO: Validate characters in label. Might need filtering
 			p := perfdata.Perfdata{
 				Label: cliQueryConfig.PerfdataLabel,
 				Value: record,
