@@ -1,0 +1,7 @@
+.idea
+check_influxdb
+vendor/
+coverage.html
+coverage.out
+dist/
+__pycache__/

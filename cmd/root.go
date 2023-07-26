@@ -43,13 +43,13 @@ func init() {
 	pfs.IntVarP(&cliConfig.Port, "port", "p", 8086,
 		"Port of the InfluxDB instance")
 	pfs.StringVarP(&cliConfig.Token, "token", "T", "",
-		"The token which allows access to the API")
+		"Specify the token for server authenticatio")
 	pfs.BoolVarP(&cliConfig.TLS, "tls", "S", false,
-		"Use secure connection")
+		"Use a HTTPS connection")
 	pfs.BoolVar(&cliConfig.Insecure, "insecure", false,
-		"Allow use of self signed certificates when using SSL")
+		"Skip the verification of the server's TLS certificate")
 	pfs.IntVarP(&Timeout, "timeout", "t", Timeout,
-		"Timeout for the check")
+		"Timeout in seconds for the CheckPlugin")
 
 	rootCmd.Flags().SortFlags = false
 	pfs.SortFlags = false

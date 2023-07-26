@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/NETWAYS/check_influxdb/internal/client"
 	"github.com/NETWAYS/go-check"
 	"github.com/NETWAYS/go-check/perfdata"
 	"github.com/NETWAYS/go-check/result"
@@ -29,6 +28,40 @@ type QueryConfig struct {
 }
 
 var cliQueryConfig QueryConfig
+
+// Converts return from client into float64
+func assertFloat64(value interface{}) (float64, error) {
+	switch res := value.(type) {
+	case float64:
+		return res, nil
+	case float32:
+		return float64(res), nil
+	case int64:
+		return float64(res), nil
+	case int32:
+		return float64(res), nil
+	case int16:
+		return float64(res), nil
+	case int8:
+		return float64(res), nil
+	case int:
+		return float64(res), nil
+	case uint64:
+		return float64(res), nil
+	case uint32:
+		return float64(res), nil
+	case uint16:
+		return float64(res), nil
+	case uint8:
+		return float64(res), nil
+	case uint:
+		return float64(res), nil
+	case string:
+		return 0, fmt.Errorf("string value can not be evaluated")
+	default:
+		return 0, fmt.Errorf("unknown data type")
+	}
+}
 
 var queryCmd = &cobra.Command{
 	Use:   "query",
@@ -79,7 +112,7 @@ Use the '--verbose' parameter to see the query which will be evaluated.`,
 		)
 
 		for _, result := range res {
-			record, err := client.AssertFloat64(result.Value())
+			record, err := assertFloat64(result.Value())
 			if err != nil {
 				check.ExitError(err)
 			}
@@ -162,8 +195,7 @@ func init() {
 	fs.StringArrayVar(&cliQueryConfig.RawFilter, "raw-filter", []string{},
 		"A fully customizable filter which will be added to the query.\ne.g. 'filter(fn: (r) => r[\"hostname\"] == \"example.com\")'")
 	fs.StringVar(&cliQueryConfig.ValueByKey, "value-by-key", "",
-		"Sets the label for the perfdata of the given column key for the record.\ne.g. --value-by-key 'hostname', which will be rendered out"+
-			"of the database to 'exmaple.int.host.com'")
+		"Sets the label for the perfdata of the given column key for the record.\ne.g. --value-by-key 'hostname', which will be rendered out of the database to 'exmaple.int.host.com'")
 	fs.StringVar(&cliQueryConfig.PerfdataLabel, "perfdata-label", "",
 		"Sets as custom label for the perfdata")
 	fs.BoolVarP(&cliQueryConfig.Verbose, "verbose", "v", false,
