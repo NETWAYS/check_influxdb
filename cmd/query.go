@@ -195,8 +195,7 @@ func init() {
 	fs.StringArrayVar(&cliQueryConfig.RawFilter, "raw-filter", []string{},
 		"A fully customizable filter which will be added to the query.\ne.g. 'filter(fn: (r) => r[\"hostname\"] == \"example.com\")'")
 	fs.StringVar(&cliQueryConfig.ValueByKey, "value-by-key", "",
-		"Sets the label for the perfdata of the given column key for the record.\ne.g. --value-by-key 'hostname', which will be rendered out"+
-			"of the database to 'exmaple.int.host.com'")
+		"Sets the label for the perfdata of the given column key for the record.\ne.g. --value-by-key 'hostname', which will be rendered out of the database to 'exmaple.int.host.com'")
 	fs.StringVar(&cliQueryConfig.PerfdataLabel, "perfdata-label", "",
 		"Sets as custom label for the perfdata")
 	fs.BoolVarP(&cliQueryConfig.Verbose, "verbose", "v", false,
