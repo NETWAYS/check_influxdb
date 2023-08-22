@@ -17,7 +17,7 @@ go_fmt:
 golangci:
   stage: lint
   image:
-    name: docker.io/golangci/golangci-lint:v1.51
+    name: docker.io/golangci/golangci-lint:v1.53
     entrypoint: ['']
   script:
     - golangci-lint run -v
