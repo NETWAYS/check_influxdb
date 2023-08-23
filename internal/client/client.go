@@ -59,6 +59,7 @@ func (c *Client) Connect() error {
 	return nil
 }
 
+// TODO Move to cmd/query.go.
 func (c *Client) GetQueryResult(query string) (res *api.QueryTableResult, err error) {
 	queryAPI := c.Client.QueryAPI(c.Organization)
 
@@ -75,6 +76,7 @@ func (c *Client) GetQueryResult(query string) (res *api.QueryTableResult, err er
 	return
 }
 
+// TODO Move to cmd/query.go.
 func (c *Client) GetQueryRecords(query string) (records []*query.FluxRecord, err error) {
 	res, err := c.GetQueryResult(query)
 	if err != nil {

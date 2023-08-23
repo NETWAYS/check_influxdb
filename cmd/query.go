@@ -90,7 +90,7 @@ Use the '--verbose' parameter to see the query which will be evaluated.`,
 		query := cliQueryConfig.RawQuery
 
 		if query == "" {
-			query, err = cliQueryConfig.BuildQuery()
+			query, err = cliQueryConfig.buildQuery()
 			if err != nil {
 				check.ExitError(err)
 			}
@@ -209,7 +209,7 @@ func init() {
 	fs.SortFlags = false
 }
 
-func (q *QueryConfig) BuildQuery() (string, error) {
+func (q *QueryConfig) buildQuery() (string, error) {
 	query := fmt.Sprintf(
 		`from(bucket: "%s")
 		|> range(start: %s, stop: %s)
