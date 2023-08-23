@@ -2,12 +2,13 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/api/query"
 	"github.com/influxdata/influxdb-client-go/v2/domain"
-	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
@@ -16,31 +17,32 @@ type Client struct {
 	Organization string
 	Url          string
 	Token        string
-	Insecure     bool
 	Client       influxdb2.Client
-	LogLevel     uint
-	Average      int
-	Critical     int
-	Warning      int
+	RoundTripper http.RoundTripper
 }
 
-func NewClient(url, token, org string) *Client {
+func NewClient(url, token, org string, rt http.RoundTripper) *Client {
 	return &Client{
 		Url:          url,
 		Token:        token,
-		Insecure:     false,
 		Organization: org,
+		RoundTripper: rt,
 	}
 }
 
 // nolint: gosec
 func (c *Client) Connect() error {
+	httpclient := &http.Client{
+		Transport: c.RoundTripper,
+	}
+
+	options := influxdb2.DefaultOptions().SetHTTPClient(httpclient)
+
 	cfg := influxdb2.NewClientWithOptions(
 		c.Url,
 		c.Token,
-		influxdb2.DefaultOptions().SetTLSConfig(&tls.Config{
-			InsecureSkipVerify: c.Insecure,
-		}).SetLogLevel(c.LogLevel))
+		options,
+	)
 
 	ctx, cancel := c.timeoutContext()
 	defer cancel()

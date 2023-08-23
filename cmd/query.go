@@ -80,7 +80,7 @@ IMPORTANT: the filter, aggregation and raw-filter parameters has a specific eval
 Use the '--verbose' parameter to see the query which will be evaluated.`,
 	Example: ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		c := cliConfig.Client()
+		c := cliConfig.NewClient()
 		err := c.Connect()
 		if err != nil {
 			check.ExitError(err)

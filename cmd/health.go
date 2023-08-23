@@ -11,10 +11,10 @@ var healthCmd = &cobra.Command{
 	Long: `Checks the health status of InfluxDB
 
 The health status is:
-  pass = OK
-  fail = CRITICAL`,
+	pass = OK
+	fail = CRITICAL`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := cliConfig.Client()
+		client := cliConfig.NewClient()
 		err := client.Connect()
 		if err != nil {
 			check.ExitError(err)
