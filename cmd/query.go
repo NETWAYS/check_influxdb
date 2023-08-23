@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/NETWAYS/go-check"
 	"github.com/NETWAYS/go-check/perfdata"
 	"github.com/NETWAYS/go-check/result"
 	"github.com/spf13/cobra"
-	"strings"
-	"time"
 )
 
 type QueryConfig struct {
@@ -29,7 +30,7 @@ type QueryConfig struct {
 
 var cliQueryConfig QueryConfig
 
-// Converts return from client into float64
+// Converts return from client into float64.
 func assertFloat64(value interface{}) (float64, error) {
 	switch res := value.(type) {
 	case float64:
@@ -80,7 +81,7 @@ IMPORTANT: the filter, aggregation and raw-filter parameters has a specific eval
 Use the '--verbose' parameter to see the query which will be evaluated.`,
 	Example: ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		c := cliConfig.Client()
+		c := cliConfig.NewClient()
 		err := c.Connect()
 		if err != nil {
 			check.ExitError(err)
@@ -89,7 +90,7 @@ Use the '--verbose' parameter to see the query which will be evaluated.`,
 		query := cliQueryConfig.RawQuery
 
 		if query == "" {
-			query, err = cliQueryConfig.BuildQuery()
+			query, err = cliQueryConfig.buildQuery()
 			if err != nil {
 				check.ExitError(err)
 			}
@@ -208,7 +209,7 @@ func init() {
 	fs.SortFlags = false
 }
 
-func (q *QueryConfig) BuildQuery() (string, error) {
+func (q *QueryConfig) buildQuery() (string, error) {
 	query := fmt.Sprintf(
 		`from(bucket: "%s")
 		|> range(start: %s, stop: %s)

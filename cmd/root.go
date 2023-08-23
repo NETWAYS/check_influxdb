@@ -1,20 +1,21 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/NETWAYS/go-check"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var Timeout = 30
 
 var rootCmd = &cobra.Command{
 	Use:   "check_influxdb",
-	Short: "Icinga check plugin to check InfluxDB",
+	Short: "An Icinga check plugin to check InfluxDB",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		go check.HandleTimeout(Timeout)
 	},
-	Run: Help,
+	Run: Usage,
 }
 
 func Execute(version string) {
@@ -42,11 +43,17 @@ func init() {
 		"Address of the InfluxDB instance")
 	pfs.IntVarP(&cliConfig.Port, "port", "p", 8086,
 		"Port of the InfluxDB instance")
-	pfs.StringVarP(&cliConfig.Token, "token", "T", "",
-		"Specify the token for server authenticatio")
-	pfs.BoolVarP(&cliConfig.TLS, "tls", "S", false,
+	pfs.BoolVarP(&cliConfig.Secure, "secure", "s", false,
 		"Use a HTTPS connection")
-	pfs.BoolVar(&cliConfig.Insecure, "insecure", false,
+	pfs.StringVarP(&cliConfig.Token, "token", "T", "",
+		"Token for server authentication")
+	pfs.StringVarP(&cliConfig.CAFile, "ca-file", "", "",
+		"Specify the CA File for TLS authentication")
+	pfs.StringVarP(&cliConfig.CertFile, "cert-file", "", "",
+		"Specify the Certificate File for TLS authentication")
+	pfs.StringVarP(&cliConfig.KeyFile, "key-file", "", "",
+		"Specify the Key File for TLS authentication")
+	pfs.BoolVarP(&cliConfig.Insecure, "insecure", "i", false,
 		"Skip the verification of the server's TLS certificate")
 	pfs.IntVarP(&Timeout, "timeout", "t", Timeout,
 		"Timeout in seconds for the CheckPlugin")
@@ -55,7 +62,7 @@ func init() {
 	pfs.SortFlags = false
 }
 
-func Help(cmd *cobra.Command, strings []string) {
+func Usage(cmd *cobra.Command, _ []string) {
 	_ = cmd.Usage()
 
 	os.Exit(3)
