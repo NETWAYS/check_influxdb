@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/NETWAYS/check_influxdb/cmd"
 )
 
-// nolint: gochecknoglobals
+// These get filled at build time with the proper vaules.
 var (
-	// These get filled at build time with the proper vaules
+	//nolint: gochecknoglobals
 	version = "development"
 	commit  = "HEAD"
 	date    = "latest"
@@ -17,7 +18,6 @@ func main() {
 	cmd.Execute(buildVersion())
 }
 
-//goland:noinspection GoBoolExpressions
 func buildVersion() string {
 	result := version
 

@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/NETWAYS/go-check"
 	"github.com/NETWAYS/go-check/perfdata"
 	"github.com/NETWAYS/go-check/result"
 	"github.com/spf13/cobra"
-	"strings"
-	"time"
 )
 
 type QueryConfig struct {
@@ -29,7 +30,7 @@ type QueryConfig struct {
 
 var cliQueryConfig QueryConfig
 
-// Converts return from client into float64
+// Converts return from client into float64.
 func assertFloat64(value interface{}) (float64, error) {
 	switch res := value.(type) {
 	case float64:

@@ -15,7 +15,7 @@ import (
 
 type Client struct {
 	Organization string
-	Url          string
+	URL          string
 	Token        string
 	Client       influxdb2.Client
 	RoundTripper http.RoundTripper
@@ -23,14 +23,13 @@ type Client struct {
 
 func NewClient(url, token, org string, rt http.RoundTripper) *Client {
 	return &Client{
-		Url:          url,
+		URL:          url,
 		Token:        token,
 		Organization: org,
 		RoundTripper: rt,
 	}
 }
 
-// nolint: gosec
 func (c *Client) Connect() error {
 	httpclient := &http.Client{
 		Transport: c.RoundTripper,
@@ -39,7 +38,7 @@ func (c *Client) Connect() error {
 	options := influxdb2.DefaultOptions().SetHTTPClient(httpclient)
 
 	cfg := influxdb2.NewClientWithOptions(
-		c.Url,
+		c.URL,
 		c.Token,
 		options,
 	)
@@ -61,7 +60,6 @@ func (c *Client) Connect() error {
 }
 
 func (c *Client) timeoutContext() (context.Context, func()) {
-	// TODO Add timeout config
 	return context.WithTimeout(context.Background(), 5*time.Second)
 }
 
@@ -79,12 +77,12 @@ func (c *Client) Health() (*domain.HealthCheck, error) {
 }
 
 func (c *Client) GetQueryResult(query string) (res *api.QueryTableResult, err error) {
-	queryApi := c.Client.QueryAPI(c.Organization)
+	queryAPI := c.Client.QueryAPI(c.Organization)
 
 	ctx, cancel := c.timeoutContext()
 	defer cancel()
 
-	res, err = queryApi.Query(ctx, query)
+	res, err = queryAPI.Query(ctx, query)
 	if err != nil {
 		err = fmt.Errorf("could build query: %w", err)
 		return

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -14,13 +13,13 @@ import (
 
 type Config struct {
 	Hostname     string
-	Port         int
 	CAFile       string
 	CertFile     string
 	KeyFile      string
-	Insecure     bool
 	Token        string
 	Organization string
+	Port         int
+	Insecure     bool
 	Secure       bool
 }
 
@@ -56,8 +55,4 @@ func (c *Config) NewClient() *client.Client {
 	}
 
 	return client.NewClient(u.String(), c.Token, c.Organization, rt)
-}
-
-func (c *Config) timeoutContext() (context.Context, func()) {
-	return context.WithTimeout(context.Background(), 10*time.Second)
 }
