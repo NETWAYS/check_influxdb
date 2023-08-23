@@ -8,7 +8,6 @@ import (
 
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/api/query"
-	"github.com/influxdata/influxdb-client-go/v2/domain"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
@@ -43,7 +42,8 @@ func (c *Client) Connect() error {
 		options,
 	)
 
-	ctx, cancel := c.timeoutContext()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
 	defer cancel()
 
 	conn, err := cfg.Ping(ctx)
@@ -59,27 +59,11 @@ func (c *Client) Connect() error {
 	return nil
 }
 
-func (c *Client) timeoutContext() (context.Context, func()) {
-	return context.WithTimeout(context.Background(), 5*time.Second)
-}
-
-func (c *Client) Health() (*domain.HealthCheck, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	health, err := c.Client.Health(ctx)
-	if err != nil {
-		err = fmt.Errorf("could not fetch health: %w", err)
-		return nil, err
-	}
-
-	return health, nil
-}
-
 func (c *Client) GetQueryResult(query string) (res *api.QueryTableResult, err error) {
 	queryAPI := c.Client.QueryAPI(c.Organization)
 
-	ctx, cancel := c.timeoutContext()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
 	defer cancel()
 
 	res, err = queryAPI.Query(ctx, query)

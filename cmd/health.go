@@ -20,7 +20,12 @@ The health status is:
 			check.ExitError(err)
 		}
 
-		health, err := client.Health()
+		// Getting the preconfigured context
+		ctx, cancel := cliConfig.timeoutContext()
+		defer cancel()
+
+		health, err := client.Client.Health(ctx)
+
 		if err != nil {
 			check.ExitError(err)
 		}

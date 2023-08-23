@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,4 +56,8 @@ func (c *Config) NewClient() *client.Client {
 	}
 
 	return client.NewClient(u.String(), c.Token, c.Organization, rt)
+}
+
+func (c *Config) timeoutContext() (context.Context, func()) {
+	return context.WithTimeout(context.Background(), 10*time.Second)
 }
