@@ -6,9 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/influxdata/influxdb-client-go/v2/api/query"
-
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
@@ -57,45 +54,4 @@ func (c *Client) Connect() error {
 	}
 
 	return nil
-}
-
-// TODO Move to cmd/query.go.
-func (c *Client) GetQueryResult(query string) (res *api.QueryTableResult, err error) {
-	queryAPI := c.Client.QueryAPI(c.Organization)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-	defer cancel()
-
-	res, err = queryAPI.Query(ctx, query)
-	if err != nil {
-		err = fmt.Errorf("could build query: %w", err)
-		return
-	}
-
-	return
-}
-
-// TODO Move to cmd/query.go.
-func (c *Client) GetQueryRecords(query string) (records []*query.FluxRecord, err error) {
-	res, err := c.GetQueryResult(query)
-	if err != nil {
-		return
-	}
-
-	if res.Err() != nil {
-		err = fmt.Errorf("could not parse query: %w", res.Err())
-		return
-	}
-
-	for res.Next() {
-		records = append(records, res.Record())
-	}
-
-	if records == nil {
-		err = fmt.Errorf("no record has been returned")
-		return
-	}
-
-	return
 }
