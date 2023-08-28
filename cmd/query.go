@@ -140,22 +140,23 @@ var queryCmd = &cobra.Command{
 
 			states = append(states, recordStatus)
 
+			// Default performance data label.
 			if cliQueryConfig.PerfdataLabel == "" {
 				cliQueryConfig.PerfdataLabel = "influxdb." + record.Measurement() + "." + record.Field()
 			}
 
+			// Use LabelByKey.
 			if cliQueryConfig.PerfdataLabelByKey != "" {
+				// TODO this can result in <nil> if the key does not exist
 				cliQueryConfig.PerfdataLabel = fmt.Sprint(record.ValueByKey(cliQueryConfig.PerfdataLabelByKey))
 			}
 
-			p := perfdata.Perfdata{
+			perfData.Add(&perfdata.Perfdata{
 				Label: cliQueryConfig.PerfdataLabel,
 				Value: recordValue,
 				Warn:  warn,
 				Crit:  crit,
-			}
-
-			perfData.Add(&p)
+			})
 		}
 
 		// When the data from the query cannot be parsed.
@@ -202,6 +203,7 @@ func init() {
 		"Sets as custom label for the perfdata")
 
 	queryCmd.MarkFlagsMutuallyExclusive("flux-file", "flux-string")
+	queryCmd.MarkFlagsMutuallyExclusive("perfdata-label-by-key", "perfdata-label")
 
 	_ = queryCmd.MarkFlagRequired("bucket")
 	_ = queryCmd.MarkFlagRequired("org")
