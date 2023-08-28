@@ -142,13 +142,17 @@ var queryCmd = &cobra.Command{
 
 			// Default performance data label.
 			if cliQueryConfig.PerfdataLabel == "" {
-				cliQueryConfig.PerfdataLabel = "influxdb." + record.Measurement() + "." + record.Field()
+				cliQueryConfig.PerfdataLabel = record.Measurement() + "." + record.Field()
 			}
 
 			// Use LabelByKey.
 			if cliQueryConfig.PerfdataLabelByKey != "" {
-				// TODO this can result in <nil> if the key does not exist
 				cliQueryConfig.PerfdataLabel = fmt.Sprint(record.ValueByKey(cliQueryConfig.PerfdataLabelByKey))
+			}
+
+			// Skip perfdata if no key was found <nil>
+			if cliQueryConfig.PerfdataLabel == "<nil>" {
+				continue
 			}
 
 			perfData.Add(&perfdata.Perfdata{
@@ -198,7 +202,7 @@ func init() {
 		"Flux script as string")
 
 	fs.StringVar(&cliQueryConfig.PerfdataLabelByKey, "perfdata-label-by-key", "",
-		"Sets the label for the perfdata of the given column key for the record")
+		"Sets the label for the perfdata of the given column key for the record. Will skip perfdata output if the key is not found")
 	fs.StringVar(&cliQueryConfig.PerfdataLabel, "perfdata-label", "",
 		"Sets as custom label for the perfdata")
 
