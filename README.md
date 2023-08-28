@@ -44,7 +44,7 @@ Flags:
   -w, --warning string                 The warning threshold (required)
   -f, --flux-file string               Path to flux file
   -q, --flux-string string             Flux script as string
-      --perfdata-label-by-key string   Sets the label for the perfdata of the given column key for the record
+      --perfdata-label-by-key string   Sets the label for the perfdata of the given column key for the record. Will skip perfdata output if the key is not found
       --perfdata-label string          Sets as custom label for the perfdata
   -h, --help                           help for query
 ```

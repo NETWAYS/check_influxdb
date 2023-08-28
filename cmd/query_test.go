@@ -93,7 +93,7 @@ func TestQueryCmd(t *testing.T) {
 				))
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-file", "../testdata/mem.flux", "-w", "200", "-c", "500"},
-			expected: "[CRITICAL] - InfluxDB Query Status | influxdb.mem.active=501;200;500 influxdb.mem.active=502;200;500 influxdb.mem.active=125;200;500",
+			expected: "[CRITICAL] - InfluxDB Query Status | mem.active=501;200;500 mem.active=502;200;500 mem.active=125;200;500",
 		},
 		{
 			name: "query-string-output",
@@ -110,7 +110,7 @@ func TestQueryCmd(t *testing.T) {
 				))
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-string", "from(bucket:\"monitor\")|>range(start:-1h)", "-w", "1", "-c", "2"},
-			expected: "[OK] - InfluxDB Query Status | influxdb.cpu.usage_user=0.078;1;2 influxdb.cpu.usage_user=0.044;1;2 influxdb.cpu.usage_user=0.078;1;2 influxdb.cpu.usage_user=0.044;1;2",
+			expected: "[OK] - InfluxDB Query Status | cpu.usage_user=0.078;1;2 cpu.usage_user=0.044;1;2 cpu.usage_user=0.078;1;2 cpu.usage_user=0.044;1;2",
 		},
 		{
 			name: "query-perfdata",
@@ -141,6 +141,21 @@ func TestQueryCmd(t *testing.T) {
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-string", "from(bucket:\"monitor\")|>range(start:-1h)", "-w", "1", "-c", "2", "--perfdata-label-by-key", "host"},
 			expected: "InfluxDB Query Status | influx=0.078;1;2 influx=0.044;1;2",
+		},
+		{
+			name: "query-perfdata-by-key-is-nil",
+			httpreturn: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/csv")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`#group,false,false,true,true,false,false,true,true,true,true
+#datatype,string,long,dateTime:RFC3339,dateTime:RFC3339,dateTime:RFC3339,double,string,string,string,string
+,result,table,_start,_stop,_time,_value,_field,_measurement,cpu,host
+,_result,0,2023-08-28T12:03:46.777288171Z,2023-08-28T13:03:46.777288171Z,2023-08-28T13:00:00Z,0.07822905321070156,usage_user,cpu,cpu-total,influx
+,_result,1,2023-08-28T12:03:46.777288171Z,2023-08-28T13:03:46.777288171Z,2023-08-28T13:03:46.777288171Z,0.04436126250005433,usage_user,cpu,cpu0,influx`,
+				))
+			},
+			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-string", "from(bucket:\"monitor\")|>range(start:-1h)", "-w", "1", "-c", "2", "--perfdata-label-by-key", "foobar"},
+			expected: "InfluxDB Query Status |",
 		},
 	}
 
