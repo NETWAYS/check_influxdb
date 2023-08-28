@@ -2,8 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
-	"time"
+	"os"
 
 	"github.com/NETWAYS/go-check"
 	"github.com/NETWAYS/go-check/perfdata"
@@ -12,26 +11,21 @@ import (
 )
 
 type QueryConfig struct {
-	RawQuery      string
-	Bucket        string
-	RangeStart    time.Duration
-	RangeEnd      time.Duration
-	Measurement   string
-	Field         string
-	RawFilter     []string
-	Filter        []string
-	Aggregation   string
-	PerfdataLabel string
-	ValueByKey    string
-	Critical      string
-	Warning       string
-	Verbose       bool
+	Organization       string
+	Bucket             string
+	PerfdataLabel      string
+	PerfdataLabelByKey string
+	FluxFile           string
+	FluxString         string
+	Critical           string
+	Warning            string
 }
 
 var cliQueryConfig QueryConfig
 
-// Converts return from client into float64.
-func assertFloat64(value interface{}) (float64, error) {
+// Check of we can convert a record's value to compare it
+// to the warn/crit threshold.
+func convertToFloat64(value interface{}) (float64, error) {
 	switch res := value.(type) {
 	case float64:
 		return res, nil
@@ -66,102 +60,122 @@ func assertFloat64(value interface{}) (float64, error) {
 
 var queryCmd = &cobra.Command{
 	Use:   "query",
-	Short: "Checks one specific or multiple values from the database",
-	Long: `Checks one specific or multiple values from the database. It's possible to set custom labels for
-the perfdata via '--perfdata-label', or set the key name from the database via '--value-by-key'.
-IMPORTANT: the filter, aggregation and raw-filter parameters has a specific evaluation order, which is:
-	1. --bucket
-	2. --start --end
-	3. --measurement
-	4. --field
-	5. --filter (can be repeated)
-	6. --raw-filter (can be repeated)
-	7. --aggregation
-
-Use the '--verbose' parameter to see the query which will be evaluated.`,
-	Example: ``,
+	Short: "Checks one specific or multiple values from the database using flux",
+	Long:  `Checks one specific or multiple values from the database using flux`,
 	Run: func(cmd *cobra.Command, args []string) {
-		c := cliConfig.NewClient()
-		err := c.Connect()
-		if err != nil {
-			check.ExitError(err)
-		}
-
-		query := cliQueryConfig.RawQuery
-
-		if query == "" {
-			query, err = cliQueryConfig.buildQuery()
-			if err != nil {
-				check.ExitError(err)
-			}
-			if cliQueryConfig.Verbose {
-				fmt.Println(query)
-			}
-		}
-
-		res, err := c.GetQueryRecords(query)
-		if err != nil {
-			check.ExitError(err)
-		}
 
 		var (
-			output  string
-			rc      int
-			perf    perfdata.PerfdataList
-			states  []int
-			summary float64
+			perfData     perfdata.PerfdataList
+			rc           int
+			recordStatus int
+			states       []int
+			fluxQuery    string
 		)
 
-		for _, result := range res {
-			record, err := assertFloat64(result.Value())
+		if cliQueryConfig.FluxFile == "" && cliQueryConfig.FluxString == "" {
+			check.ExitError(fmt.Errorf("flux script needs to be defined with either --flux-file or --flux-string"))
+		}
+
+		crit, err := check.ParseThreshold(cliQueryConfig.Critical)
+		if err != nil {
+			check.ExitError(err)
+		}
+
+		warn, err := check.ParseThreshold(cliQueryConfig.Warning)
+		if err != nil {
+			check.ExitError(err)
+		}
+
+		// Load flux script from file.
+		if cliQueryConfig.FluxFile != "" {
+			fq, err := os.ReadFile(cliQueryConfig.FluxFile)
+
 			if err != nil {
-				check.ExitError(err)
+				check.ExitError(fmt.Errorf("unable to read flux file %s: %w", cliQueryConfig.FluxFile, err))
 			}
 
-			summary += record
+			fluxQuery = string(fq)
+		}
 
-			crit, err := check.ParseThreshold(cliQueryConfig.Critical)
+		// Load flux from CLI.
+		if cliQueryConfig.FluxString != "" {
+			fluxQuery = cliQueryConfig.FluxString
+		}
+
+		// Create API Client.
+		c := cliConfig.NewClient()
+		err = c.Connect()
+
+		if err != nil {
+			check.ExitError(err)
+		}
+
+		// Getting the preconfigured context.
+		ctx, cancel := cliConfig.timeoutContext()
+		defer cancel()
+
+		queryAPI := c.Client.QueryAPI(c.Organization)
+		queryResult, queryErr := queryAPI.Query(ctx, fluxQuery)
+
+		if queryErr != nil {
+			check.ExitError(queryErr)
+		}
+
+		// Evaluate query results.
+		for queryResult.Next() {
+			record := queryResult.Record()
+			recordValue, err := convertToFloat64(record.Value())
+
 			if err != nil {
-				check.ExitError(err)
+				continue
 			}
 
-			warn, err := check.ParseThreshold(cliQueryConfig.Warning)
-			if err != nil {
-				check.ExitError(err)
-			}
-
-			if crit.DoesViolate(record) {
-				rc = 2
-			} else if warn.DoesViolate(record) {
-				rc = 1
+			if crit.DoesViolate(recordValue) {
+				recordStatus = 2
+			} else if warn.DoesViolate(recordValue) {
+				recordStatus = 1
 			} else {
-				rc = 0
+				recordStatus = 0
 			}
 
-			output += fmt.Sprintf("value is: %s; ", check.FormatFloat(record))
+			states = append(states, recordStatus)
 
-			states = append(states, rc)
-
-			if cliQueryConfig.ValueByKey != "" {
-				cliQueryConfig.PerfdataLabel = fmt.Sprint(result.ValueByKey(cliQueryConfig.ValueByKey))
+			if cliQueryConfig.PerfdataLabel == "" {
+				cliQueryConfig.PerfdataLabel = "influxdb." + record.Measurement() + "." + record.Field()
 			}
 
-			// TODO: Validate characters in label. Might need filtering
+			if cliQueryConfig.PerfdataLabelByKey != "" {
+				cliQueryConfig.PerfdataLabel = fmt.Sprint(record.ValueByKey(cliQueryConfig.PerfdataLabelByKey))
+			}
+
+			// TODO PerData Label
 			p := perfdata.Perfdata{
 				Label: cliQueryConfig.PerfdataLabel,
-				Value: record,
+				Value: recordValue,
 				Warn:  warn,
 				Crit:  crit,
 			}
 
-			perf.Add(&p)
+			perfData.Add(&p)
 		}
 
-		if result.WorstState(states...) == 0 {
-			output = "All values are OK"
+		// When the data from the query cannot be parsed.
+		if queryResult.Err() != nil {
+			check.ExitRaw(check.Unknown, "query error:", queryResult.Err().Error())
 		}
 
-		check.ExitRaw(result.WorstState(states...), output, "|", perf.String())
+		switch result.WorstState(states...) {
+		case 0:
+			rc = check.OK
+		case 1:
+			rc = check.Warning
+		case 2:
+			rc = check.Critical
+		default:
+			rc = check.Unknown
+		}
+
+		check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData.String())
 	},
 }
 
@@ -170,81 +184,30 @@ func init() {
 	fs := queryCmd.Flags()
 
 	fs.StringVarP(&cliConfig.Organization, "org", "o", "",
-		"The organization which will be used")
-
-	_ = queryCmd.MarkFlagRequired("org")
-
+		"The organization to use (required)")
 	fs.StringVarP(&cliQueryConfig.Bucket, "bucket", "b", "",
-		"The bucket where time series data is stored")
+		"The bucket to use (required)")
+	fs.StringVarP(&cliQueryConfig.Critical, "critical", "c", "",
+		"The critical threshold (required)")
+	fs.StringVarP(&cliQueryConfig.Warning, "warning", "w", "",
+		"The warning threshold (required)")
 
-	_ = queryCmd.MarkFlagRequired("bucket")
+	fs.StringVarP(&cliQueryConfig.FluxFile, "flux-file", "f", "",
+		"Path to flux file")
+	fs.StringVarP(&cliQueryConfig.FluxString, "flux-string", "q", "",
+		"Flux script as string")
 
-	fs.StringVarP(&cliQueryConfig.RawQuery, "raw-query", "q", "",
-		"An InfluxQL query which will be performed. Note: Only ONE value result will be evaluated")
-	fs.DurationVar(&cliQueryConfig.RangeStart, "start", -time.Hour,
-		"Specifies a start time range for your query.")
-	fs.DurationVar(&cliQueryConfig.RangeEnd, "end", 0,
-		"Specifies the end of a time range for your query.")
-	fs.StringVarP(&cliQueryConfig.Measurement, "measurement", "m", "",
-		"The data stored in the associated fields, e.g. 'disk'")
-	fs.StringVarP(&cliQueryConfig.Field, "field", "f", "value",
-		"The key-value pair that records metadata and the actual data value.")
-	fs.StringVarP(&cliQueryConfig.Aggregation, "aggregation", "a", "last",
-		"Function that returns an aggregated value across a set of points.\nViable values are 'mean', 'median', 'last', 'max', 'sum'")
-	fs.StringArrayVarP(&cliQueryConfig.Filter, "filter", "F", []string{},
-		"Add a key=value filter to the query, e.g. 'hostname=example.com'")
-	fs.StringArrayVar(&cliQueryConfig.RawFilter, "raw-filter", []string{},
-		"A fully customizable filter which will be added to the query.\ne.g. 'filter(fn: (r) => r[\"hostname\"] == \"example.com\")'")
-	fs.StringVar(&cliQueryConfig.ValueByKey, "value-by-key", "",
-		"Sets the label for the perfdata of the given column key for the record.\ne.g. --value-by-key 'hostname', which will be rendered out of the database to 'exmaple.int.host.com'")
+	fs.StringVar(&cliQueryConfig.PerfdataLabelByKey, "perfdata-label-by-key", "",
+		"Sets the label for the perfdata of the given column key for the record")
 	fs.StringVar(&cliQueryConfig.PerfdataLabel, "perfdata-label", "",
 		"Sets as custom label for the perfdata")
-	fs.BoolVarP(&cliQueryConfig.Verbose, "verbose", "v", false,
-		"Display verbose output")
-	fs.StringVarP(&cliQueryConfig.Critical, "critical", "c", "500",
-		"The critical threshold for a value")
-	fs.StringVarP(&cliQueryConfig.Warning, "warning", "w", "1000",
-		"The warning threshold for a value")
+
+	queryCmd.MarkFlagsMutuallyExclusive("flux-file", "flux-string")
+
+	_ = queryCmd.MarkFlagRequired("bucket")
+	_ = queryCmd.MarkFlagRequired("org")
+	_ = queryCmd.MarkFlagRequired("warning")
+	_ = queryCmd.MarkFlagRequired("critical")
 
 	fs.SortFlags = false
-}
-
-func (q *QueryConfig) buildQuery() (string, error) {
-	query := fmt.Sprintf(
-		`from(bucket: "%s")
-		|> range(start: %s, stop: %s)
-		|> filter(fn: (r) => r["_measurement"] == "%s")
-		|> filter(fn: (r) => r["_field"] == "%s")`,
-		q.Bucket,
-		q.RangeStart,
-		q.RangeEnd,
-		q.Measurement,
-		q.Field,
-	)
-
-	for _, filter := range q.Filter {
-		pair := strings.SplitN(filter, "=", 2)
-		if len(pair) < 2 {
-			return "", fmt.Errorf("filter must be 'key=value'")
-		}
-
-		query += "\n"
-		query += fmt.Sprintf(`|> filter(fn: (r) => r["%s"] == "%s")`,
-			pair[0],
-			pair[1],
-		)
-	}
-
-	for _, rawFilter := range q.RawFilter {
-		query += "\n |> " + rawFilter
-	}
-
-	switch q.Aggregation {
-	case "median", "mean", "last", "sum", "max":
-		query += "\n |> " + q.Aggregation + "()"
-	default:
-		return "", fmt.Errorf("unknown aggreation function")
-	}
-
-	return query, nil
 }

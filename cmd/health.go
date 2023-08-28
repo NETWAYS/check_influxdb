@@ -10,7 +10,7 @@ var healthCmd = &cobra.Command{
 	Short: "Checks the health status of InfluxDB",
 	Long: `Checks the health status of InfluxDB
 
-The health status is:
+API translation:
 	pass = OK
 	fail = CRITICAL`,
 	Run: func(cmd *cobra.Command, args []string) {
