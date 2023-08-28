@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -49,10 +50,13 @@ func (c *Config) NewClient() *client.Client {
 	}
 
 	var rt http.RoundTripper = &http.Transport{
-		TLSClientConfig:       tlsConfig,
-		IdleConnTimeout:       10 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 10 * time.Second,
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		TLSHandshakeTimeout: 10 * time.Second,
+		TLSClientConfig:     tlsConfig,
 	}
 
 	return client.NewClient(u.String(), c.Token, c.Organization, rt)

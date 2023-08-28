@@ -148,7 +148,6 @@ var queryCmd = &cobra.Command{
 				cliQueryConfig.PerfdataLabel = fmt.Sprint(record.ValueByKey(cliQueryConfig.PerfdataLabelByKey))
 			}
 
-			// TODO PerData Label
 			p := perfdata.Perfdata{
 				Label: cliQueryConfig.PerfdataLabel,
 				Value: recordValue,
