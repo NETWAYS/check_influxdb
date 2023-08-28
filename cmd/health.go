@@ -16,9 +16,15 @@ API translation:
 	Run: func(cmd *cobra.Command, args []string) {
 		client := cliConfig.NewClient()
 		err := client.Connect()
+
 		if err != nil {
 			check.ExitError(err)
 		}
+
+		var (
+			rc     int
+			output string
+		)
 
 		// Getting the preconfigured context
 		ctx, cancel := cliConfig.timeoutContext()
@@ -30,9 +36,6 @@ API translation:
 			check.ExitError(err)
 		}
 
-		var rc int
-		output := health.Name + ": " + string(health.Status) + " - " + *health.Message
-
 		switch string(health.Status) {
 		case "pass":
 			rc = 0
@@ -41,6 +44,8 @@ API translation:
 		default:
 			rc = 3
 		}
+
+		output = health.Name + ": " + string(health.Status) + " - " + *health.Message
 
 		check.ExitRaw(rc, output)
 	},
