@@ -33,3 +33,5 @@ linters-settings:
      min-complexity: 4
    maligned:
      suggest-new: true
+   funlen:
+     lines: 90
