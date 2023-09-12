@@ -166,6 +166,11 @@ func TestQueryCmd(t *testing.T) {
 
 			// Just so that the Client can establish the connection
 			mux.HandleFunc("/ping/", func(w http.ResponseWriter, r *http.Request) {})
+
+			mux.HandleFunc("/health/", func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"name":"influxdb", "message":"", "status":"pass", "checks":[], "version": "v2.7.1", "commit": ""}`))
+			})
+
 			// Add the wanted return to the Handler
 			mux.HandleFunc("/api/", test.httpreturn)
 

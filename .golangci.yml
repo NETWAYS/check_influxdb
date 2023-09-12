@@ -2,10 +2,13 @@ run:
   timeout: 5m
   tests: false
   skip-files:
+    - 'internal/config/config.go'
     - 'internal/config/http_config.go'
+
 linters:
    enable-all: true
    disable:
+     - goimports # TODO Remove this one
      - cyclop
      - depguard
      - exhaustivestruct
@@ -23,6 +26,7 @@ linters:
      - musttag
      - nlreturn
      - nonamedreturns
+     - wrapcheck
      - varnamelen
 linters-settings:
    estif:

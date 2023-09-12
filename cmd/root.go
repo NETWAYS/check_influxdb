@@ -47,6 +47,8 @@ func init() {
 		"Use a HTTPS connection")
 	pfs.StringVarP(&cliConfig.Token, "token", "T", "",
 		"Token for server authentication")
+	pfs.StringVarP(&cliConfig.BasicAuth, "user", "u", "",
+		"Specify the user name and password for server authentication <user:password>")
 	pfs.StringVarP(&cliConfig.CAFile, "ca-file", "", "",
 		"Specify the CA File for TLS authentication")
 	pfs.StringVarP(&cliConfig.CertFile, "cert-file", "", "",

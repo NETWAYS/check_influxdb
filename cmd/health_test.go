@@ -37,7 +37,7 @@ func TestHealthCmd(t *testing.T) {
 				w.Write([]byte(`{"name":"influxdb", "message":"ready for queries and writes", "status":"pass", "checks":[], "version": "v2.7.1", "commit": "407fa622e9"}`))
 			},
 			args:     []string{"run", "../main.go", "health"},
-			expected: "[OK] - influxdb: pass - ready for queries and writes\n",
+			expected: "[OK] - InfluxDB Status: pass\n",
 		},
 		{
 			name: "health-fail",
@@ -45,7 +45,7 @@ func TestHealthCmd(t *testing.T) {
 				w.Write([]byte(`{"name":"influxdb", "message":"Oh No!", "status":"fail", "checks":[], "version": "v2.7.1", "commit": "407fa622e9"}`))
 			},
 			args:     []string{"run", "../main.go", "health"},
-			expected: "[CRITICAL] - influxdb: fail - Oh No!\nexit status 2\n",
+			expected: "[CRITICAL] - InfluxDB Status: fail\nexit status 2\n",
 		},
 	}
 

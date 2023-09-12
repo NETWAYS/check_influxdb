@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/NETWAYS/go-check"
 	"github.com/NETWAYS/go-check/perfdata"
 	"github.com/NETWAYS/go-check/result"
+	v2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +22,9 @@ type QueryConfig struct {
 	Critical           string
 	Warning            string
 }
+
+var warn *check.Threshold
+var crit *check.Threshold
 
 var cliQueryConfig QueryConfig
 
@@ -58,30 +63,109 @@ func convertToFloat64(value interface{}) (float64, error) {
 	}
 }
 
+func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
+	client := v2.NewClientWithOptions(url, token,
+		v2.DefaultOptions().SetHTTPClient(c),
+	)
+
+	ctx, cancel := cliConfig.timeoutContext()
+
+	defer cancel()
+
+	var (
+		perfData     perfdata.PerfdataList
+		rc           int
+		recordStatus int
+		states       []int
+	)
+
+	queryAPI := client.QueryAPI(org)
+	queryResult, queryErr := queryAPI.Query(ctx, fluxQuery)
+
+	if queryErr != nil {
+		check.ExitError(queryErr)
+	}
+
+	// Evaluate query results.
+	for queryResult.Next() {
+		record := queryResult.Record()
+		recordValue, err := convertToFloat64(record.Value())
+
+		if err != nil {
+			continue
+		}
+
+		//nolint: gocritic
+		if crit.DoesViolate(recordValue) {
+			recordStatus = 2
+		} else if warn.DoesViolate(recordValue) {
+			recordStatus = 1
+		} else {
+			recordStatus = 0
+		}
+
+		states = append(states, recordStatus)
+
+		// Default performance data label.
+		if cliQueryConfig.PerfdataLabel == "" {
+			cliQueryConfig.PerfdataLabel = record.Measurement() + "." + record.Field()
+		}
+
+		// Use LabelByKey.
+		if cliQueryConfig.PerfdataLabelByKey != "" {
+			cliQueryConfig.PerfdataLabel = fmt.Sprint(record.ValueByKey(cliQueryConfig.PerfdataLabelByKey))
+		}
+
+		// Skip perfdata if no key was found <nil>
+		if cliQueryConfig.PerfdataLabel == "<nil>" {
+			continue
+		}
+
+		perfData.Add(&perfdata.Perfdata{
+			Label: cliQueryConfig.PerfdataLabel,
+			Value: recordValue,
+			Warn:  warn,
+			Crit:  crit,
+		})
+	}
+
+	// When the data from the query cannot be parsed.
+	if queryResult.Err() != nil {
+		check.ExitRaw(check.Unknown, "query error:", queryResult.Err().Error())
+	}
+
+	switch result.WorstState(states...) {
+	case 0:
+		rc = check.OK
+	case 1:
+		rc = check.Warning
+	case 2:
+		rc = check.Critical
+	default:
+		rc = check.Unknown
+	}
+
+	check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData.String())
+}
+
 var queryCmd = &cobra.Command{
 	Use:   "query",
 	Short: "Checks one specific or multiple values from the database using flux",
 	Long:  `Checks one specific or multiple values from the database using flux`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		var (
-			perfData     perfdata.PerfdataList
-			rc           int
-			recordStatus int
-			states       []int
-			fluxQuery    string
-		)
+		var fluxQuery string
+		var err error
 
 		if cliQueryConfig.FluxFile == "" && cliQueryConfig.FluxString == "" {
 			check.ExitError(fmt.Errorf("flux script needs to be defined with either --flux-file or --flux-string"))
 		}
 
-		crit, err := check.ParseThreshold(cliQueryConfig.Critical)
+		crit, err = check.ParseThreshold(cliQueryConfig.Critical)
 		if err != nil {
 			check.ExitError(err)
 		}
 
-		warn, err := check.ParseThreshold(cliQueryConfig.Warning)
+		warn, err = check.ParseThreshold(cliQueryConfig.Warning)
 		if err != nil {
 			check.ExitError(err)
 		}
@@ -104,82 +188,21 @@ var queryCmd = &cobra.Command{
 
 		// Create API Client.
 		c := cliConfig.NewClient()
-		err = c.Connect()
 
-		if err != nil {
-			check.ExitError(err)
+		apiversion, versionErr := c.Version()
+
+		if versionErr != nil {
+			check.ExitError(versionErr)
 		}
 
-		// Getting the preconfigured context.
-		ctx, cancel := cliConfig.timeoutContext()
-		defer cancel()
-
-		queryAPI := c.Client.QueryAPI(c.Organization)
-		queryResult, queryErr := queryAPI.Query(ctx, fluxQuery)
-
-		if queryErr != nil {
-			check.ExitError(queryErr)
-		}
-
-		// Evaluate query results.
-		for queryResult.Next() {
-			record := queryResult.Record()
-			recordValue, err := convertToFloat64(record.Value())
-
-			if err != nil {
-				continue
-			}
-
-			if crit.DoesViolate(recordValue) {
-				recordStatus = 2
-			} else if warn.DoesViolate(recordValue) {
-				recordStatus = 1
-			} else {
-				recordStatus = 0
-			}
-
-			states = append(states, recordStatus)
-
-			// Default performance data label.
-			if cliQueryConfig.PerfdataLabel == "" {
-				cliQueryConfig.PerfdataLabel = record.Measurement() + "." + record.Field()
-			}
-
-			// Use LabelByKey.
-			if cliQueryConfig.PerfdataLabelByKey != "" {
-				cliQueryConfig.PerfdataLabel = fmt.Sprint(record.ValueByKey(cliQueryConfig.PerfdataLabelByKey))
-			}
-
-			// Skip perfdata if no key was found <nil>
-			if cliQueryConfig.PerfdataLabel == "<nil>" {
-				continue
-			}
-
-			perfData.Add(&perfdata.Perfdata{
-				Label: cliQueryConfig.PerfdataLabel,
-				Value: recordValue,
-				Warn:  warn,
-				Crit:  crit,
-			})
-		}
-
-		// When the data from the query cannot be parsed.
-		if queryResult.Err() != nil {
-			check.ExitRaw(check.Unknown, "query error:", queryResult.Err().Error())
-		}
-
-		switch result.WorstState(states...) {
-		case 0:
-			rc = check.OK
+		switch apiversion.MajorVersion {
 		case 1:
-			rc = check.Warning
+			queryFluxV2(fluxQuery, c.URL, c.Organization, c.Token, c.Client)
 		case 2:
-			rc = check.Critical
+			queryFluxV2(fluxQuery, c.URL, c.Organization, c.Token, c.Client)
 		default:
-			rc = check.Unknown
+			check.ExitError(fmt.Errorf("InfluxDB Version %d not supported", apiversion.MajorVersion))
 		}
-
-		check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData.String())
 	},
 }
 
