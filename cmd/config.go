@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/NETWAYS/check_influxdb/internal/client"
@@ -14,6 +16,7 @@ import (
 )
 
 type Config struct {
+	BasicAuth    string
 	Hostname     string
 	CAFile       string
 	CertFile     string
@@ -57,6 +60,26 @@ func (c *Config) NewClient() *client.Client {
 		}).DialContext,
 		TLSHandshakeTimeout: 10 * time.Second,
 		TLSClientConfig:     tlsConfig,
+	}
+
+	// Using a Bearer Token for authentication
+	if c.Token != "" {
+		var t = config.Secret(c.Token)
+		rt = config.NewAuthorizationCredentialsRoundTripper("Token", t, rt)
+	}
+
+	// Using a BasicAuth for authentication
+	if c.BasicAuth != "" {
+		s := strings.Split(c.BasicAuth, ":")
+		if len(s) != 2 {
+			check.ExitError(fmt.Errorf("specify the user name and password for server authentication <user:password>"))
+		}
+
+		var u = s[0]
+
+		var p = config.Secret(s[1])
+
+		rt = config.NewBasicAuthRoundTripper(u, p, "", rt)
 	}
 
 	return client.NewClient(u.String(), c.Token, c.Organization, rt)

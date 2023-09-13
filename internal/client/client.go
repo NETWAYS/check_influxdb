@@ -2,56 +2,68 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/NETWAYS/check_influxdb/internal/api"
 )
 
 type Client struct {
 	Organization string
 	URL          string
 	Token        string
-	Client       influxdb2.Client
-	RoundTripper http.RoundTripper
+	Client       *http.Client
 }
 
 func NewClient(url, token, org string, rt http.RoundTripper) *Client {
+	// Small wrapper
+	c := &http.Client{
+		Transport: rt,
+	}
+
 	return &Client{
 		URL:          url,
 		Token:        token,
 		Organization: org,
-		RoundTripper: rt,
+		Client:       c,
 	}
 }
 
-func (c *Client) Connect() error {
-	httpclient := &http.Client{
-		Transport: c.RoundTripper,
-	}
+// Version returns the Version of the InfluxDB API.
+func (c *Client) Version() (influxdb.APIVersion, error) {
+	var v influxdb.APIVersion
 
-	options := influxdb2.DefaultOptions().SetHTTPClient(httpclient)
-
-	cfg := influxdb2.NewClientWithOptions(
-		c.URL,
-		c.Token,
-		options,
-	)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	conn, err := cfg.Ping(ctx)
+	u, _ := url.JoinPath(c.URL, "/health")
+
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+
+	// Do the HTTP Request to the URL.
+	resp, err := c.Client.Do(req)
+	if resp == nil {
+		return v, fmt.Errorf("could not reach influxdb instance")
+	}
+
 	if err != nil {
-		err = fmt.Errorf("could not reach influxdb instance: %w", err)
-		return err
+		return v, err
 	}
 
-	if conn {
-		c.Client = cfg
+	if resp.StatusCode != http.StatusOK {
+		return v, fmt.Errorf("could not get %s - Error: %d", u, resp.StatusCode)
 	}
 
-	return nil
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&v)
+
+	if err != nil {
+		return v, err
+	}
+
+	return v, nil
 }

@@ -32,20 +32,36 @@ type HealthTest struct {
 func TestHealthCmd(t *testing.T) {
 	tests := []HealthTest{
 		{
-			name: "health-ok",
+			name: "health-v1-ok",
+			httpreturn: func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"checks":[],"message":"ready for queries and writes","name":"influxdb","status":"pass","version":"1.8.10"}`))
+			},
+			args:     []string{"run", "../main.go", "health"},
+			expected: "[OK] - InfluxDB Status: pass\n",
+		},
+		{
+			name: "health-v2-ok",
 			httpreturn: func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(`{"name":"influxdb", "message":"ready for queries and writes", "status":"pass", "checks":[], "version": "v2.7.1", "commit": "407fa622e9"}`))
 			},
 			args:     []string{"run", "../main.go", "health"},
-			expected: "[OK] - influxdb: pass - ready for queries and writes\n",
+			expected: "[OK] - InfluxDB Status: pass\n",
 		},
 		{
-			name: "health-fail",
+			name: "health-v2-fail",
 			httpreturn: func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(`{"name":"influxdb", "message":"Oh No!", "status":"fail", "checks":[], "version": "v2.7.1", "commit": "407fa622e9"}`))
 			},
 			args:     []string{"run", "../main.go", "health"},
-			expected: "[CRITICAL] - influxdb: fail - Oh No!\nexit status 2\n",
+			expected: "[CRITICAL] - InfluxDB Status: fail\nexit status 2\n",
+		},
+		{
+			name: "health-v3-unknown",
+			httpreturn: func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"name":"influxdb", "message":"", "status":"pass", "checks":[], "version": "v3.0.0", "commit": "000000"}`))
+			},
+			args:     []string{"run", "../main.go", "health"},
+			expected: "[UNKNOWN] - InfluxDB Version 3 not supported (*errors.errorString)\nexit status 3\n",
 		},
 	}
 
