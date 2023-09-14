@@ -196,8 +196,6 @@ var queryCmd = &cobra.Command{
 		}
 
 		switch apiversion.MajorVersion {
-		case 1:
-			queryFluxV2(fluxQuery, c.URL, c.Organization, c.Token, c.Client)
 		case 2:
 			queryFluxV2(fluxQuery, c.URL, c.Organization, c.Token, c.Client)
 		default:
@@ -225,7 +223,7 @@ func init() {
 		"Flux script as string")
 
 	fs.StringVar(&cliQueryConfig.PerfdataLabelByKey, "perfdata-label-by-key", "",
-		"Sets the label for the perfdata of the given column key for the record. Will skip perfdata output if the key is not found")
+		"Sets the label for the perfdata of the given column key for the record.\nWill skip perfdata output if the key is not found")
 	fs.StringVar(&cliQueryConfig.PerfdataLabel, "perfdata-label", "",
 		"Sets as custom label for the perfdata")
 
