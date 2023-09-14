@@ -1,10 +1,15 @@
 # check_influxdb
 
-Icinga check plugin to check InfluxDB v2.
+Icinga check plugin to check InfluxDB
 
 ## Usage
 
 ### Health
+
+Supported InfluxDB versions:
+
+* v1
+* v2
 
 Checks the health status of an InfluxDB instance.
 
@@ -32,6 +37,10 @@ check_influxdb health
 ```
 
 ### Query
+
+Supported InfluxDB versions:
+
+* v2
 
 ```
 Usage:

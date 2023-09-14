@@ -196,8 +196,6 @@ var queryCmd = &cobra.Command{
 		}
 
 		switch apiversion.MajorVersion {
-		case 1:
-			queryFluxV2(fluxQuery, c.URL, c.Organization, c.Token, c.Client)
 		case 2:
 			queryFluxV2(fluxQuery, c.URL, c.Organization, c.Token, c.Client)
 		default:
