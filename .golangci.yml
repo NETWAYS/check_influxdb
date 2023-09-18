@@ -8,7 +8,6 @@ run:
 linters:
    enable-all: true
    disable:
-     - goimports # TODO Remove this one
      - cyclop
      - depguard
      - exhaustivestruct
