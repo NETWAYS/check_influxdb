@@ -11,6 +11,8 @@ import (
 	"github.com/NETWAYS/check_influxdb/internal/api"
 )
 
+// Client is a small wrapper for HTTP connections,
+// that is configured and used in the subcommands.
 type Client struct {
 	Organization string
 	URL          string
@@ -19,7 +21,6 @@ type Client struct {
 }
 
 func NewClient(url, token, org string, rt http.RoundTripper) *Client {
-	// Small wrapper
 	c := &http.Client{
 		Transport: rt,
 	}

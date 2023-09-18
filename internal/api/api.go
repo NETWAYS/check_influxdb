@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// APIVersion is mainly for identifying the API Version of InfluxDB
 type APIVersion struct {
 	Version      string `json:"version"`
 	MajorVersion int
