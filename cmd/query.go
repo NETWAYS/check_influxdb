@@ -195,6 +195,8 @@ var queryCmd = &cobra.Command{
 			check.ExitError(versionErr)
 		}
 
+		// Uses the major version to determine which API to call.
+		// Can be extended in the future.
 		switch apiversion.MajorVersion {
 		case 2:
 			queryFluxV2(fluxQuery, c.URL, c.Organization, c.Token, c.Client)

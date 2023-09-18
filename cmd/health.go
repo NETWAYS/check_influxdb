@@ -52,6 +52,8 @@ API translation:
 			err    error
 		)
 
+		// Uses the major version to determine which API to call.
+		// Can be extended in the future.
 		switch apiversion.MajorVersion {
 		case 1:
 			health, err = checkV2Health(c.URL, c.Token, c.Client)
@@ -65,6 +67,7 @@ API translation:
 			check.ExitError(err)
 		}
 
+		// Is this flexible enough? Might be better to use strings.Contains.
 		switch health {
 		case "pass":
 			rc = 0

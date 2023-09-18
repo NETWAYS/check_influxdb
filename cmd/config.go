@@ -15,6 +15,7 @@ import (
 	"github.com/NETWAYS/go-check"
 )
 
+// Central Configuration for CLI
 type Config struct {
 	BasicAuth    string
 	Hostname     string
@@ -85,6 +86,7 @@ func (c *Config) NewClient() *client.Client {
 	return client.NewClient(u.String(), c.Token, c.Organization, rt)
 }
 
+// Central timeout configuration for anything that needs it
 func (c *Config) timeoutContext() (context.Context, func()) {
 	return context.WithTimeout(context.Background(), 10*time.Second)
 }
