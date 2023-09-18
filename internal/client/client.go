@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/NETWAYS/check_influxdb/internal/api"
+	influxdb "github.com/NETWAYS/check_influxdb/internal/api"
 )
 
 // Client is a small wrapper for HTTP connections,
