@@ -29,6 +29,8 @@ Global Flags:
   -T, --token string      The token which allows access to the API
 ```
 
+The check plugin respects the environment variables HTTP_PROXY, HTTPS_PROXY and NO_PROXY.
+
 Examples:
 
 ```
