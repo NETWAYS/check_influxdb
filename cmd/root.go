@@ -40,21 +40,21 @@ func init() {
 
 	pfs := rootCmd.PersistentFlags()
 	pfs.StringVarP(&cliConfig.Hostname, "hostname", "H", "localhost",
-		"Address of the InfluxDB instance")
+		"Address of the InfluxDB instance (CHECK_INFLUXDB_HOSTNAME)")
 	pfs.IntVarP(&cliConfig.Port, "port", "p", 8086,
 		"Port of the InfluxDB instance")
 	pfs.BoolVarP(&cliConfig.Secure, "secure", "s", false,
 		"Use a HTTPS connection")
 	pfs.StringVarP(&cliConfig.Token, "token", "T", "",
-		"Token for server authentication")
+		"Token for server authentication (CHECK_INFLUXDB_TOKEN)")
 	pfs.StringVarP(&cliConfig.BasicAuth, "user", "u", "",
-		"Specify the user name and password for server authentication <user:password>")
+		"Specify the user name and password for server authentication <user:password> (CHECK_INFLUXDB_BASICAUTH)")
 	pfs.StringVarP(&cliConfig.CAFile, "ca-file", "", "",
-		"Specify the CA File for TLS authentication")
+		"Specify the CA File for TLS authentication (CHECK_INFLUXDB_CA_FILE)")
 	pfs.StringVarP(&cliConfig.CertFile, "cert-file", "", "",
-		"Specify the Certificate File for TLS authentication")
+		"Specify the Certificate File for TLS authentication (CHECK_INFLUXDB_CERT_FILE)")
 	pfs.StringVarP(&cliConfig.KeyFile, "key-file", "", "",
-		"Specify the Key File for TLS authentication")
+		"Specify the Key File for TLS authentication (CHECK_INFLUXDB_KEY_FILE)")
 	pfs.BoolVarP(&cliConfig.Insecure, "insecure", "i", false,
 		"Skip the verification of the server's TLS certificate")
 	pfs.IntVarP(&Timeout, "timeout", "t", Timeout,
@@ -62,6 +62,8 @@ func init() {
 
 	rootCmd.Flags().SortFlags = false
 	pfs.SortFlags = false
+
+	check.LoadFromEnv(&cliConfig)
 }
 
 func Usage(cmd *cobra.Command, _ []string) {
