@@ -17,13 +17,13 @@ import (
 
 // Central Configuration for CLI
 type Config struct {
-	BasicAuth    string
-	Hostname     string
-	CAFile       string
-	CertFile     string
-	KeyFile      string
-	Token        string
-	Organization string
+	BasicAuth    string `env:"CHECK_INFLUXDB_BASICAUTH"`
+	Hostname     string `env:"CHECK_INFLUXDB_HOSTNAME"`
+	CAFile       string `env:"CHECK_INFLUXDB_CA_FILE"`
+	CertFile     string `env:"CHECK_INFLUXDB_CERT_FILE"`
+	KeyFile      string `env:"CHECK_INFLUXDB_KEY_FILE"`
+	Token        string `env:"CHECK_INFLUXDB_TOKEN"`
+	Organization string `env:"CHECK_INFLUXDB_ORGANISATION"`
 	Port         int
 	Insecure     bool
 	Secure       bool

@@ -21,15 +21,23 @@ Flags:
   -h, --help   help for health
 
 Global Flags:
-  -H, --hostname string   Address of the InfluxDB instance (default "localhost")
-      --insecure          Allow use of self signed certificates when using SSL
-  -p, --port int          Port of the InfluxDB instance (default 8086)
-  -t, --timeout int       Timeout for the check (default 30)
-  -S, --tls               Use secure connection
-  -T, --token string      The token which allows access to the API
+  -H, --hostname string    Address of the InfluxDB instance (CHECK_INFLUXDB_HOSTNAME) (default "localhost")
+  -p, --port int           Port of the InfluxDB instance (default 8086)
+  -s, --secure             Use a HTTPS connection
+  -T, --token string       Token for server authentication (CHECK_INFLUXDB_TOKEN)
+  -u, --user string        Specify the user name and password for server authentication <user:password> (CHECK_INFLUXDB_BASICAUTH)
+      --ca-file string     Specify the CA File for TLS authentication (CHECK_INFLUXDB_CA_FILE)
+      --cert-file string   Specify the Certificate File for TLS authentication (CHECK_INFLUXDB_CERT_FILE)
+      --key-file string    Specify the Key File for TLS authentication (CHECK_INFLUXDB_KEY_FILE)
+  -i, --insecure           Skip the verification of the server's TLS certificate
+  -t, --timeout int        Timeout in seconds for the CheckPlugin (default 30)
+  -h, --help               help for check_influxdb
+  -v, --version            version for check_influxdb
 ```
 
 The check plugin respects the environment variables HTTP_PROXY, HTTPS_PROXY and NO_PROXY.
+
+Various flags can be set with environment variables, refer to the help to see which flags.
 
 Examples:
 
