@@ -35,7 +35,7 @@ var healthCmd = &cobra.Command{
 API translation:
 	pass = OK
 	fail = CRITICAL`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Creating an client and connecting to the API
 		c := cliConfig.NewClient()
 

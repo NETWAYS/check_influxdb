@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -47,7 +48,7 @@ func (c *Client) Version() (influxdb.APIVersion, error) {
 	// Do the HTTP Request to the URL.
 	resp, err := c.Client.Do(req)
 	if resp == nil {
-		return v, fmt.Errorf("could not reach influxdb instance")
+		return v, errors.New("could not reach influxdb instance")
 	}
 
 	if err != nil {
