@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -57,9 +58,9 @@ func convertToFloat64(value interface{}) (float64, error) {
 	case uint:
 		return float64(res), nil
 	case string:
-		return 0, fmt.Errorf("string value can not be evaluated")
+		return 0, errors.New("string value can not be evaluated")
 	default:
-		return 0, fmt.Errorf("unknown data type")
+		return 0, errors.New("unknown data type")
 	}
 }
 
@@ -152,12 +153,12 @@ var queryCmd = &cobra.Command{
 	Use:   "query",
 	Short: "Checks one specific or multiple values from the database using flux",
 	Long:  `Checks one specific or multiple values from the database using flux`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		var fluxQuery string
 		var err error
 
 		if cliQueryConfig.FluxFile == "" && cliQueryConfig.FluxString == "" {
-			check.ExitError(fmt.Errorf("flux script needs to be defined with either --flux-file or --flux-string"))
+			check.ExitError(errors.New("flux script needs to be defined with either --flux-file or --flux-string"))
 		}
 
 		crit, err = check.ParseThreshold(cliQueryConfig.Critical)

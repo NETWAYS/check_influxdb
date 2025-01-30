@@ -2,7 +2,7 @@ package influxdb
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -32,7 +32,7 @@ func (v *APIVersion) UnmarshalJSON(b []byte) error {
 		majorVersion, convErr := strconv.Atoi(version[0])
 
 		if convErr != nil {
-			return fmt.Errorf("could not determine version")
+			return errors.New("could not determine version")
 		}
 
 		v.MajorVersion = majorVersion
