@@ -1,9 +1,6 @@
 run:
   timeout: 5m
   tests: false
-  skip-files:
-    - 'internal/config/config.go'
-    - 'internal/config/http_config.go'
 
 linters:
    enable-all: true
@@ -30,9 +27,5 @@ linters:
      - wrapcheck
      - varnamelen
 linters-settings:
-   estif:
-     min-complexity: 4
-   maligned:
-     suggest-new: true
-   funlen:
-     lines: 90
+  funlen:
+    lines: 90
