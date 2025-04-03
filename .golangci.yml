@@ -1,31 +1,47 @@
+version: "2"
 run:
-  timeout: 5m
   tests: false
-
 linters:
-   enable-all: true
-   disable:
-     - cyclop
-     - depguard
-     - exhaustivestruct
-     - exhaustruct
-     - forbidigo
-     - gci
-     - lll
-     - godot
-     - gofumpt
-     - gochecknoinits
-     - gochecknoglobals
-     - goerr113
-     - godox
-     - gomnd
-     - mnd
-     - nakedret
-     - musttag
-     - nlreturn
-     - nonamedreturns
-     - wrapcheck
-     - varnamelen
-linters-settings:
-  funlen:
-    lines: 90
+  default: all
+  disable:
+    - cyclop
+    - depguard
+    - err113
+    - exhaustruct
+    - forbidigo
+    - gochecknoglobals
+    - gochecknoinits
+    - godot
+    - godox
+    - lll
+    - mnd
+    - musttag
+    - nakedret
+    - nlreturn
+    - nonamedreturns
+    - varnamelen
+    - wrapcheck
+  settings:
+    funlen:
+      lines: 90
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
