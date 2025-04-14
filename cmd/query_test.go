@@ -93,7 +93,7 @@ func TestQueryCmd(t *testing.T) {
 				))
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-file", "../testdata/mem.flux", "-w", "200", "-c", "500"},
-			expected: "[CRITICAL] - InfluxDB Query Status | mem.active=501;200;500 mem.active=502;200;500 mem.active=125;200;500",
+			expected: "[CRITICAL] - InfluxDB Query Status | mem.active=125;200;500",
 		},
 		{
 			name: "query-string-output",
@@ -110,7 +110,7 @@ func TestQueryCmd(t *testing.T) {
 				))
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-string", "from(bucket:\"monitor\")|>range(start:-1h)", "-w", "1", "-c", "2"},
-			expected: "[OK] - InfluxDB Query Status | cpu.usage_user=0.078;1;2 cpu.usage_user=0.044;1;2 cpu.usage_user=0.078;1;2 cpu.usage_user=0.044;1;2",
+			expected: "[OK] - InfluxDB Query Status | cpu.usage_user=0.044;1;2",
 		},
 		{
 			name: "query-perfdata",
@@ -125,7 +125,7 @@ func TestQueryCmd(t *testing.T) {
 				))
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-string", "from(bucket:\"monitor\")|>range(start:-1h)", "-w", "1", "-c", "2", "--perfdata-label", "foobar"},
-			expected: "InfluxDB Query Status | foobar=0.078;1;2 foobar=0.044;1;2",
+			expected: "InfluxDB Query Status | foobar=0.044;1;2",
 		},
 		{
 			name: "query-perfdata-by-key",
@@ -140,7 +140,7 @@ func TestQueryCmd(t *testing.T) {
 				))
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-string", "from(bucket:\"monitor\")|>range(start:-1h)", "-w", "1", "-c", "2", "--perfdata-label-by-key", "host"},
-			expected: "InfluxDB Query Status | influx=0.078;1;2 influx=0.044;1;2",
+			expected: "InfluxDB Query Status | influx=0.044;1;2",
 		},
 		{
 			name: "query-perfdata-by-key-is-nil",
@@ -155,7 +155,7 @@ func TestQueryCmd(t *testing.T) {
 				))
 			},
 			args:     []string{"run", "../main.go", "query", "-o", "org", "-b", "bucket", "-T", "token", "--flux-string", "from(bucket:\"monitor\")|>range(start:-1h)", "-w", "1", "-c", "2", "--perfdata-label-by-key", "foobar"},
-			expected: "InfluxDB Query Status |",
+			expected: "InfluxDB Query Status",
 		},
 	}
 

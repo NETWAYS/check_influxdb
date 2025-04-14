@@ -146,7 +146,12 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 		rc = check.Unknown
 	}
 
-	check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData.String())
+	// If we got perfdata we print the only the last value
+	if len(perfData) > 1 {
+		check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData[len(perfData)-1].String())
+	}
+
+	check.ExitRaw(rc, "InfluxDB Query Status")
 }
 
 var queryCmd = &cobra.Command{
