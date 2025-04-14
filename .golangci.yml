@@ -11,6 +11,7 @@ linters:
     - forbidigo
     - gochecknoglobals
     - gochecknoinits
+    - funlen
     - godot
     - godox
     - lll
@@ -21,9 +22,6 @@ linters:
     - nonamedreturns
     - varnamelen
     - wrapcheck
-  settings:
-    funlen:
-      lines: 90
   exclusions:
     generated: lax
     presets:

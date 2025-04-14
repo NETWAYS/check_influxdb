@@ -96,12 +96,12 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 			continue
 		}
 
-		//nolint: gocritic
-		if crit.DoesViolate(recordValue) {
+		switch {
+		case crit.DoesViolate(recordValue):
 			recordStatus = 2
-		} else if warn.DoesViolate(recordValue) {
+		case warn.DoesViolate(recordValue):
 			recordStatus = 1
-		} else {
+		default:
 			recordStatus = 0
 		}
 
