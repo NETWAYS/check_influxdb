@@ -59,6 +59,9 @@ func init() {
 		"Skip the verification of the server's TLS certificate")
 	pfs.IntVarP(&Timeout, "timeout", "t", Timeout,
 		"Timeout in seconds for the CheckPlugin")
+	pfs.StringSliceVarP(&cliConfig.Headers, "header", "", nil,
+		`Additional HTTP header to include in the request. Can be used multiple times.
+Keys and values are separated by a colon (--header "X-Custom: example").`)
 
 	rootCmd.Flags().SortFlags = false
 	pfs.SortFlags = false
