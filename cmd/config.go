@@ -24,6 +24,7 @@ type Config struct {
 	KeyFile      string `env:"CHECK_INFLUXDB_KEY_FILE"`
 	Token        string `env:"CHECK_INFLUXDB_TOKEN"`
 	Organization string `env:"CHECK_INFLUXDB_ORGANISATION"`
+	Headers      []string
 	Port         int
 	Insecure     bool
 	Secure       bool
@@ -80,6 +81,20 @@ func (c *Config) NewClient() *client.Client {
 		var p = s[1]
 
 		rt = checkhttpconfig.NewBasicAuthRoundTripper(u, p, rt)
+	}
+
+	// If extra headers are set, parse them and add them to the request
+	if len(c.Headers) > 0 {
+		headers := make(map[string]string)
+
+		for _, h := range c.Headers {
+			head := strings.Split(h, ":")
+			if len(head) == 2 {
+				headers[strings.TrimSpace(head[0])] = strings.TrimSpace(head[1])
+			}
+		}
+
+		rt = client.NewHeadersRoundTripper(headers, rt)
 	}
 
 	return client.NewClient(u.String(), c.Token, c.Organization, rt)

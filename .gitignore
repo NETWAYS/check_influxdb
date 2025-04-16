@@ -1,4 +1,4 @@
-.idea
+.idea/
 check_influxdb
 vendor/
 coverage.html

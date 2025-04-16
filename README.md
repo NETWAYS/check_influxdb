@@ -31,6 +31,8 @@ Global Flags:
       --key-file string    Specify the Key File for TLS authentication (CHECK_INFLUXDB_KEY_FILE)
   -i, --insecure           Skip the verification of the server's TLS certificate
   -t, --timeout int        Timeout in seconds for the CheckPlugin (default 30)
+      --header strings     Additional HTTP header to include in the request. Can be used multiple times.
+                           Keys and values are separated by a colon (--header "X-Custom: example").
   -h, --help               help for check_influxdb
   -v, --version            version for check_influxdb
 ```

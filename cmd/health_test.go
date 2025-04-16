@@ -63,6 +63,21 @@ func TestHealthCmd(t *testing.T) {
 			args:     []string{"run", "../main.go", "health"},
 			expected: "[UNKNOWN] - InfluxDB Version 3 not supported (*errors.errorString)\nexit status 3\n",
 		},
+		{
+			name: "health-extra-header",
+			httpreturn: func(w http.ResponseWriter, r *http.Request) {
+				foobar := r.Header.Get("X-Foobar")
+				if foobar == "Barfoo" {
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(`{"checks":[],"message":"ready for queries and writes","name":"influxdb","status":"pass","version":"1.8.10"}`))
+					return
+				}
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`Wrong Header!`))
+			},
+			args:     []string{"run", "../main.go", "--header", "X-Foobar: Barfoo", "health"},
+			expected: "[OK] - InfluxDB Status: pass\n",
+		},
 	}
 
 	for _, test := range tests {
