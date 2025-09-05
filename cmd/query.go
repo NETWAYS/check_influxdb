@@ -147,7 +147,7 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 	}
 
 	// If we got perfdata we print the only the last value
-	if len(perfData) > 1 {
+	if len(perfData) >= 1 {
 		check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData[len(perfData)-1].String())
 	}
 
