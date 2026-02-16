@@ -8,6 +8,7 @@ require (
 	github.com/NETWAYS/go-check v0.6.4
 	github.com/NETWAYS/go-check-network/http v0.0.0-20251202001729-25880c6d17f3
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
+	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/spf13/cobra v1.10.2
 )
 

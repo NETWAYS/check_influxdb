@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"github.com/NETWAYS/check_influxdb/internal/client"
 	"github.com/NETWAYS/go-check"
 	checkhttpconfig "github.com/NETWAYS/go-check-network/http/config"
+	influxdb1client "github.com/influxdata/influxdb1-client/v2"
 )
 
 // Central Configuration for CLI
@@ -31,6 +33,54 @@ type Config struct {
 }
 
 var cliConfig Config
+
+func (c *Config) NewV1Client() influxdb1client.Client {
+	u := url.URL{
+		Scheme: "http",
+		Host:   c.Hostname + ":" + strconv.Itoa(c.Port),
+	}
+
+	if c.Secure {
+		u.Scheme = "https"
+	}
+
+	// Create TLS configuration for default RoundTripper
+	tlsConfig, err := checkhttpconfig.NewTLSConfig(&checkhttpconfig.TLSConfig{
+		InsecureSkipVerify: c.Insecure,
+		CAFile:             c.CAFile,
+		KeyFile:            c.KeyFile,
+		CertFile:           c.CertFile,
+	})
+
+	if err != nil {
+		check.ExitError(err)
+	}
+
+	conf := influxdb1client.HTTPConfig{
+		Addr:      u.String(),
+		Timeout:   30 * time.Second,
+		TLSConfig: tlsConfig,
+	}
+
+	// Using a BasicAuth for authentication
+	if c.BasicAuth != "" {
+		s := strings.Split(c.BasicAuth, ":")
+		if len(s) != 2 {
+			check.ExitError(errors.New("specify the user name and password for server authentication <user:password>"))
+		}
+
+		conf.Username = s[0]
+		conf.Password = s[1]
+	}
+
+	clientv1, errClient := influxdb1client.NewHTTPClient(conf)
+
+	if errClient != nil {
+		check.ExitError(fmt.Errorf("unable create InfluxDB client: %w", errClient))
+	}
+
+	return clientv1
+}
 
 func (c *Config) NewClient() *client.Client {
 	u := url.URL{
