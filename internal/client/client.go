@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"time"
@@ -62,7 +63,6 @@ func (c *Client) Version() (influxdb.APIVersion, error) {
 	defer resp.Body.Close()
 
 	err = json.NewDecoder(resp.Body).Decode(&v)
-
 	if err != nil {
 		return v, err
 	}
@@ -99,9 +99,7 @@ func cloneRequest(r *http.Request) *http.Request {
 	*r2 = *r
 	// Deep copy of the Header.
 	r2.Header = make(http.Header)
-	for k, s := range r.Header {
-		r2.Header[k] = s
-	}
+	maps.Copy(r2.Header, r.Header)
 
 	return r2
 }

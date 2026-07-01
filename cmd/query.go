@@ -7,8 +7,6 @@ import (
 	"os"
 
 	"github.com/NETWAYS/go-check"
-	"github.com/NETWAYS/go-check/perfdata"
-	"github.com/NETWAYS/go-check/result"
 	v2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +29,7 @@ var cliQueryConfig QueryConfig
 
 // Check of we can convert a record's value to compare it
 // to the warn/crit threshold.
-func convertToFloat64(value interface{}) (float64, error) {
+func convertToFloat64(value any) (float64, error) {
 	switch res := value.(type) {
 	case float64:
 		return res, nil
@@ -74,15 +72,15 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 	defer cancel()
 
 	var (
-		perfData     perfdata.PerfdataList
-		rc           int
-		recordStatus int
-		states       []int
+		perfData     check.PerfdataList
+		rc           check.Status
+		recordStatus check.Status
+		states       []check.Status
 	)
 
 	queryAPI := client.QueryAPI(org)
-	queryResult, queryErr := queryAPI.Query(ctx, fluxQuery)
 
+	queryResult, queryErr := queryAPI.Query(ctx, fluxQuery)
 	if queryErr != nil {
 		check.ExitError(queryErr)
 	}
@@ -90,19 +88,19 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 	// Evaluate query results.
 	for queryResult.Next() {
 		record := queryResult.Record()
-		recordValue, err := convertToFloat64(record.Value())
 
+		recordValue, err := convertToFloat64(record.Value())
 		if err != nil {
 			continue
 		}
 
 		switch {
 		case crit.DoesViolate(recordValue):
-			recordStatus = 2
+			recordStatus = check.Critical
 		case warn.DoesViolate(recordValue):
-			recordStatus = 1
+			recordStatus = check.Warning
 		default:
-			recordStatus = 0
+			recordStatus = check.OK
 		}
 
 		states = append(states, recordStatus)
@@ -122,7 +120,7 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 			continue
 		}
 
-		perfData.Add(&perfdata.Perfdata{
+		perfData.Add(&check.Perfdata{
 			Label: cliQueryConfig.PerfdataLabel,
 			Value: recordValue,
 			Warn:  warn,
@@ -132,10 +130,11 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 
 	// When the data from the query cannot be parsed.
 	if queryResult.Err() != nil {
-		check.ExitRaw(check.Unknown, "query error:", queryResult.Err().Error())
+		check.Exit(check.Unknown, "query error:", queryResult.Err().Error())
 	}
 
-	switch result.WorstState(states...) {
+	//nolint: exhaustive
+	switch check.WorstState(states...) {
 	case 0:
 		rc = check.OK
 	case 1:
@@ -148,10 +147,13 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 
 	// If we got perfdata we print the only the last value
 	if len(perfData) >= 1 {
-		check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData[len(perfData)-1].String())
+		pdl := check.PerfdataList{
+			perfData[len(perfData)-1],
+		}
+		check.ExitWithPerfdata(rc, pdl, "InfluxDB Query Status")
 	}
 
-	check.ExitRaw(rc, "InfluxDB Query Status")
+	check.Exit(rc, "InfluxDB Query Status")
 }
 
 var queryCmd = &cobra.Command{
@@ -160,6 +162,7 @@ var queryCmd = &cobra.Command{
 	Long:  `Checks one specific or multiple values from the database using flux`,
 	Run: func(_ *cobra.Command, _ []string) {
 		var fluxQuery string
+
 		var err error
 
 		if cliQueryConfig.FluxFile == "" && cliQueryConfig.FluxString == "" {
@@ -179,7 +182,6 @@ var queryCmd = &cobra.Command{
 		// Load flux script from file.
 		if cliQueryConfig.FluxFile != "" {
 			fq, err := os.ReadFile(cliQueryConfig.FluxFile)
-
 			if err != nil {
 				check.ExitError(fmt.Errorf("unable to read flux file %s: %w", cliQueryConfig.FluxFile, err))
 			}
@@ -196,7 +198,6 @@ var queryCmd = &cobra.Command{
 		c := cliConfig.NewClient()
 
 		apiversion, versionErr := c.Version()
-
 		if versionErr != nil {
 			check.ExitError(versionErr)
 		}
