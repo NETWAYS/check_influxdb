@@ -15,7 +15,7 @@ import (
 	checkhttpconfig "github.com/NETWAYS/go-check-network/http/config"
 )
 
-// Central Configuration for CLI
+// Config contains the CLI params
 type Config struct {
 	BasicAuth    string `env:"CHECK_INFLUXDB_BASICAUTH"`
 	Hostname     string `env:"CHECK_INFLUXDB_HOSTNAME"`
@@ -49,7 +49,6 @@ func (c *Config) NewClient() *client.Client {
 		KeyFile:            c.KeyFile,
 		CertFile:           c.CertFile,
 	})
-
 	if err != nil {
 		check.ExitError(err)
 	}

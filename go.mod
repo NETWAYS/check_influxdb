@@ -1,8 +1,6 @@
 module github.com/NETWAYS/check_influxdb
 
-go 1.24.0
-
-toolchain go1.24.9
+go 1.26
 
 require (
 	github.com/NETWAYS/go-check v0.6.4

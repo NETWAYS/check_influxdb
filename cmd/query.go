@@ -31,7 +31,7 @@ var cliQueryConfig QueryConfig
 
 // Check of we can convert a record's value to compare it
 // to the warn/crit threshold.
-func convertToFloat64(value interface{}) (float64, error) {
+func convertToFloat64(value any) (float64, error) {
 	switch res := value.(type) {
 	case float64:
 		return res, nil
@@ -81,8 +81,8 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 	)
 
 	queryAPI := client.QueryAPI(org)
-	queryResult, queryErr := queryAPI.Query(ctx, fluxQuery)
 
+	queryResult, queryErr := queryAPI.Query(ctx, fluxQuery)
 	if queryErr != nil {
 		check.ExitError(queryErr)
 	}
@@ -90,8 +90,8 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 	// Evaluate query results.
 	for queryResult.Next() {
 		record := queryResult.Record()
-		recordValue, err := convertToFloat64(record.Value())
 
+		recordValue, err := convertToFloat64(record.Value())
 		if err != nil {
 			continue
 		}
@@ -160,6 +160,7 @@ var queryCmd = &cobra.Command{
 	Long:  `Checks one specific or multiple values from the database using flux`,
 	Run: func(_ *cobra.Command, _ []string) {
 		var fluxQuery string
+
 		var err error
 
 		if cliQueryConfig.FluxFile == "" && cliQueryConfig.FluxString == "" {
@@ -179,7 +180,6 @@ var queryCmd = &cobra.Command{
 		// Load flux script from file.
 		if cliQueryConfig.FluxFile != "" {
 			fq, err := os.ReadFile(cliQueryConfig.FluxFile)
-
 			if err != nil {
 				check.ExitError(fmt.Errorf("unable to read flux file %s: %w", cliQueryConfig.FluxFile, err))
 			}
@@ -196,7 +196,6 @@ var queryCmd = &cobra.Command{
 		c := cliConfig.NewClient()
 
 		apiversion, versionErr := c.Version()
-
 		if versionErr != nil {
 			check.ExitError(versionErr)
 		}

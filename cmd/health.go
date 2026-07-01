@@ -19,7 +19,6 @@ func checkV2Health(url, token string, c *http.Client) (string, error) {
 	defer cancel()
 
 	health, err := client.Health(ctx)
-
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +39,6 @@ API translation:
 		c := cliConfig.NewClient()
 
 		apiversion, versionErr := c.Version()
-
 		if versionErr != nil {
 			check.ExitError(versionErr)
 		}

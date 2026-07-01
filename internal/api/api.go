@@ -13,7 +13,7 @@ type APIVersion struct {
 	MajorVersion int
 }
 
-// Custom Unmarshal since we might want to add or parse
+// UnmarshalJSON is a custom unmarshal since we might want to add or parse
 // further fields in the future. This is simpler to extend and
 // to test here than during the CheckPlugin logic.
 func (v *APIVersion) UnmarshalJSON(b []byte) error {
@@ -21,7 +21,8 @@ func (v *APIVersion) UnmarshalJSON(b []byte) error {
 
 	t := (*Temp)(v)
 
-	if err := json.Unmarshal(b, t); err != nil {
+	err := json.Unmarshal(b, t)
+	if err != nil {
 		return err
 	}
 
@@ -29,8 +30,8 @@ func (v *APIVersion) UnmarshalJSON(b []byte) error {
 	// but decided against the dependency
 	if v.Version != "" {
 		version := strings.Split(strings.TrimLeft(v.Version, "v"), ".")
-		majorVersion, convErr := strconv.Atoi(version[0])
 
+		majorVersion, convErr := strconv.Atoi(version[0])
 		if convErr != nil {
 			return errors.New("could not determine version")
 		}
