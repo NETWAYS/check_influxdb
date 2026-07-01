@@ -7,8 +7,6 @@ import (
 	"os"
 
 	"github.com/NETWAYS/go-check"
-	"github.com/NETWAYS/go-check/perfdata"
-	"github.com/NETWAYS/go-check/result"
 	v2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/spf13/cobra"
 )
@@ -74,10 +72,10 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 	defer cancel()
 
 	var (
-		perfData     perfdata.PerfdataList
-		rc           int
-		recordStatus int
-		states       []int
+		perfData     check.PerfdataList
+		rc           check.Status
+		recordStatus check.Status
+		states       []check.Status
 	)
 
 	queryAPI := client.QueryAPI(org)
@@ -98,11 +96,11 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 
 		switch {
 		case crit.DoesViolate(recordValue):
-			recordStatus = 2
+			recordStatus = check.Critical
 		case warn.DoesViolate(recordValue):
-			recordStatus = 1
+			recordStatus = check.Warning
 		default:
-			recordStatus = 0
+			recordStatus = check.OK
 		}
 
 		states = append(states, recordStatus)
@@ -122,7 +120,7 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 			continue
 		}
 
-		perfData.Add(&perfdata.Perfdata{
+		perfData.Add(&check.Perfdata{
 			Label: cliQueryConfig.PerfdataLabel,
 			Value: recordValue,
 			Warn:  warn,
@@ -132,10 +130,11 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 
 	// When the data from the query cannot be parsed.
 	if queryResult.Err() != nil {
-		check.ExitRaw(check.Unknown, "query error:", queryResult.Err().Error())
+		check.Exit(check.Unknown, "query error:", queryResult.Err().Error())
 	}
 
-	switch result.WorstState(states...) {
+	//nolint: exhaustive
+	switch check.WorstState(states...) {
 	case 0:
 		rc = check.OK
 	case 1:
@@ -148,10 +147,13 @@ func queryFluxV2(fluxQuery, url, org, token string, c *http.Client) {
 
 	// If we got perfdata we print the only the last value
 	if len(perfData) >= 1 {
-		check.ExitRaw(rc, "InfluxDB Query Status", "|", perfData[len(perfData)-1].String())
+		pdl := check.PerfdataList{
+			perfData[len(perfData)-1],
+		}
+		check.ExitWithPerfdata(rc, pdl, "InfluxDB Query Status")
 	}
 
-	check.ExitRaw(rc, "InfluxDB Query Status")
+	check.Exit(rc, "InfluxDB Query Status")
 }
 
 var queryCmd = &cobra.Command{

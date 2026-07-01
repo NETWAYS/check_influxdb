@@ -44,7 +44,7 @@ API translation:
 		}
 
 		var (
-			rc     int
+			rc     check.Status
 			output string
 			health string
 			err    error
@@ -68,16 +68,16 @@ API translation:
 		// Is this flexible enough? Might be better to use strings.Contains.
 		switch health {
 		case "pass":
-			rc = 0
+			rc = check.OK
 		case "fail":
-			rc = 2
+			rc = check.Critical
 		default:
-			rc = 3
+			rc = check.Unknown
 		}
 
 		output = "InfluxDB Status: " + health
 
-		check.ExitRaw(rc, output)
+		check.Exit(rc, output)
 	},
 }
 
